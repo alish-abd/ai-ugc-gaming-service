@@ -1,37 +1,23 @@
 {
   "tests": [
     {
-      "name": "Get courses returns 200",
+      "name": "Get lessons returns 200",
       "method": "GET",
       "path": "/",
       "expectedStatus": 200
     },
     {
-      "name": "Get tasks returns 200",
+      "name": "Get missions returns 200",
       "method": "POST",
       "path": "/",
-      "body": {"action": "get_tasks"},
+      "body": {"action": "get_missions"},
       "expectedStatus": 200
     },
     {
-      "name": "Get rating returns 200",
+      "name": "Get portfolio returns 200",
       "method": "POST",
       "path": "/",
-      "body": {"action": "get_rating"},
-      "expectedStatus": 200
-    },
-    {
-      "name": "Get achievements returns 200",
-      "method": "POST",
-      "path": "/",
-      "body": {"action": "get_achievements"},
-      "expectedStatus": 200
-    },
-    {
-      "name": "Get posts returns 200",
-      "method": "POST",
-      "path": "/",
-      "body": {"action": "get_posts"},
+      "body": {"action": "get_portfolio"},
       "expectedStatus": 200
     }
   ]

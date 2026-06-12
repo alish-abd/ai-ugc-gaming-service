@@ -1,11 +1,10 @@
-"""Основное API: курсы, задания, достижения, рейтинг, сообщество, лайки, выполнение заданий."""
+"""MISSION platform API: уроки, миссии, портфолио, партнёрские ссылки."""
 import json
 import os
 import psycopg2
 from datetime import datetime
 
 SCHEMA = os.environ.get('MAIN_DB_SCHEMA', 't_p62618369_ai_ugc_gaming_servic')
-
 CORS = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
@@ -25,11 +24,12 @@ def err(msg, status=400):
     return {'statusCode': status, 'headers': {**CORS, 'Content-Type': 'application/json'}, 'body': json.dumps({'error': msg})}
 
 
-def get_user_by_token(cur, token):
+def get_user(cur, token):
     if not token:
         return None
     cur.execute(
-        f"""SELECT u.id, u.username, u.avatar, u.xp, u.level, u.streak
+        f"""SELECT u.id, u.username, u.avatar, u.xp, u.level, u.streak,
+                   u.platform, u.season_day, u.onboarded, u.bio_link, u.email
             FROM {SCHEMA}.sessions s JOIN {SCHEMA}.users u ON s.user_id = u.id
             WHERE s.token = %s AND s.expires_at > NOW()""",
         (token,)
@@ -51,232 +51,211 @@ def handler(event: dict, context) -> dict:
 
     conn = get_conn()
     cur = conn.cursor()
-    user_row = get_user_by_token(cur, token)
+    user_row = get_user(cur, token)
     user_id = user_row[0] if user_row else None
 
     try:
-        if action == 'get_courses' or (method == 'GET' and not action):
-            return get_courses(cur, user_id)
-        if action == 'get_tasks':
-            return get_tasks(cur, user_id)
-        if action == 'complete_task':
+        if action == 'get_lessons' or (method == 'GET' and not action):
+            return get_lessons(cur, user_id)
+        if action == 'complete_lesson':
             if not user_id:
                 return err('Не авторизован', 401)
-            return complete_task(cur, conn, user_id, body.get('task_id'))
-        if action == 'get_rating':
-            return get_rating(cur, user_id)
-        if action == 'get_achievements':
-            return get_achievements(cur, user_id)
-        if action == 'get_posts':
-            return get_posts(cur, user_id)
-        if action == 'like_post':
+            return complete_lesson(cur, conn, user_id, body.get('lesson_id'))
+        if action == 'get_missions':
+            return get_missions(cur, user_id)
+        if action == 'start_mission':
             if not user_id:
                 return err('Не авторизован', 401)
-            return toggle_like(cur, conn, user_id, body.get('post_id'))
-        if action == 'create_post':
+            return start_mission(cur, conn, user_id, body.get('mission_id'))
+        if action == 'complete_mission':
             if not user_id:
                 return err('Не авторизован', 401)
-            return create_post(cur, conn, user_id, body)
-        if action == 'update_course_progress':
+            return complete_mission(cur, conn, user_id, body.get('mission_id'))
+        if action == 'get_portfolio':
+            return get_portfolio(cur, user_id)
+        if action == 'add_post':
             if not user_id:
                 return err('Не авторизован', 401)
-            return update_course_progress(cur, conn, user_id, body.get('course_id'), body.get('lessons_done'))
+            return add_post(cur, conn, user_id, body)
+        if action == 'get_partner_links':
+            if not user_id:
+                return err('Не авторизован', 401)
+            return get_partner_links(cur, user_id)
+        if action == 'update_profile':
+            if not user_id:
+                return err('Не авторизован', 401)
+            return update_profile(cur, conn, user_id, body)
+        if action == 'get_profile':
+            return get_profile(cur, user_id)
         return err('Unknown action', 404)
     finally:
         conn.close()
 
 
-def get_courses(cur, user_id):
+def get_lessons(cur, user_id):
     cur.execute(f"""
-        SELECT c.id, c.title, c.emoji, c.xp_reward, c.duration, c.level_name,
-               c.color_gradient, c.accent_color, c.total_lessons, c.tags,
-               COALESCE(p.lessons_done, 0) as lessons_done
-        FROM {SCHEMA}.courses c
-        LEFT JOIN {SCHEMA}.user_course_progress p
-            ON p.course_id = c.id AND p.user_id = %s
-        ORDER BY c.sort_order
+        SELECT l.id, l.day_number, l.title, l.subtitle, l.duration_min,
+               l.phase, l.checklist,
+               CASE WHEN ul.id IS NOT NULL THEN true ELSE false END as completed
+        FROM {SCHEMA}.lessons l
+        LEFT JOIN {SCHEMA}.user_lessons ul ON ul.lesson_id = l.id AND ul.user_id = %s
+        ORDER BY l.sort_order
     """, (user_id,))
     rows = cur.fetchall()
-    courses = []
-    for r in rows:
-        total = r[8] or 1
-        done = r[10]
-        courses.append({
-            'id': r[0], 'title': r[1], 'emoji': r[2], 'xp': r[3],
-            'duration': r[4], 'level': r[5], 'color': r[6], 'accent': r[7],
-            'lessons': total, 'done': done,
-            'progress': round(done / total * 100) if total > 0 else 0,
-            'tags': list(r[9]) if r[9] else [],
-        })
-    return ok({'courses': courses})
+    return ok({'lessons': [{
+        'id': r[0], 'day': r[1], 'title': r[2], 'subtitle': r[3],
+        'duration': r[4], 'phase': r[5],
+        'checklist': r[6] if r[6] else [],
+        'completed': r[7],
+    } for r in rows]})
 
 
-def get_tasks(cur, user_id):
-    cur.execute(f"""
-        SELECT t.id, t.title, t.xp_reward, t.deadline_label, t.difficulty, t.emoji, t.accent_color,
-               CASE WHEN ut.id IS NOT NULL THEN true ELSE false END as completed
-        FROM {SCHEMA}.tasks t
-        LEFT JOIN {SCHEMA}.user_tasks ut ON ut.task_id = t.id AND ut.user_id = %s
-        ORDER BY t.sort_order
-    """, (user_id,))
-    rows = cur.fetchall()
-    tasks = [{'id': r[0], 'title': r[1], 'xp': r[2], 'deadline': r[3],
-               'difficulty': r[4], 'emoji': r[5], 'color': r[6], 'completed': r[7]} for r in rows]
-    return ok({'tasks': tasks})
-
-
-def complete_task(cur, conn, user_id, task_id):
-    if not task_id:
-        return err('task_id required')
-    cur.execute(f"SELECT id FROM {SCHEMA}.user_tasks WHERE user_id = %s AND task_id = %s", (user_id, task_id))
+def complete_lesson(cur, conn, user_id, lesson_id):
+    if not lesson_id:
+        return err('lesson_id required')
+    cur.execute(f"SELECT id FROM {SCHEMA}.user_lessons WHERE user_id = %s AND lesson_id = %s", (user_id, lesson_id))
     if cur.fetchone():
-        return err('Задание уже выполнено')
-    cur.execute(f"SELECT xp_reward FROM {SCHEMA}.tasks WHERE id = %s", (task_id,))
-    task = cur.fetchone()
-    if not task:
-        return err('Задание не найдено', 404)
-    xp_reward = task[0]
-    cur.execute(f"INSERT INTO {SCHEMA}.user_tasks (user_id, task_id) VALUES (%s, %s)", (user_id, task_id))
-    cur.execute(f"UPDATE {SCHEMA}.users SET xp = xp + %s WHERE id = %s RETURNING xp, level", (xp_reward, user_id))
-    row = cur.fetchone()
-    new_xp, level = row
+        return ok({'ok': True, 'already': True})
+    cur.execute(f"INSERT INTO {SCHEMA}.user_lessons (user_id, lesson_id) VALUES (%s, %s)", (user_id, lesson_id))
+    cur.execute(f"UPDATE {SCHEMA}.users SET xp = xp + 50 WHERE id = %s RETURNING xp", (user_id,))
+    new_xp = cur.fetchone()[0]
     new_level = max(1, new_xp // 300)
-    if new_level != level:
-        cur.execute(f"UPDATE {SCHEMA}.users SET level = %s WHERE id = %s", (new_level, user_id))
+    cur.execute(f"UPDATE {SCHEMA}.users SET level = %s WHERE id = %s", (new_level, user_id))
     conn.commit()
-    return ok({'ok': True, 'xp_gained': xp_reward, 'total_xp': new_xp, 'level': new_level})
+    return ok({'ok': True, 'xp_gained': 50, 'total_xp': new_xp, 'level': new_level})
 
 
-def get_rating(cur, user_id):
+def get_missions(cur, user_id):
     cur.execute(f"""
-        SELECT id, username, avatar, xp, level,
-               RANK() OVER (ORDER BY xp DESC) as rank
-        FROM {SCHEMA}.users
-        ORDER BY xp DESC
-        LIMIT 20
+        SELECT m.id, m.title, m.product, m.format, m.goal,
+               m.hooks, m.template, m.xp_reward, m.unlock_after_lessons,
+               um.status,
+               (SELECT COUNT(*) FROM {SCHEMA}.user_lessons ul2 WHERE ul2.user_id = %s) as lessons_done
+        FROM {SCHEMA}.missions m
+        LEFT JOIN {SCHEMA}.user_missions um ON um.mission_id = m.id AND um.user_id = %s
+        ORDER BY m.sort_order
+    """, (user_id, user_id))
+    rows = cur.fetchall()
+    return ok({'missions': [{
+        'id': r[0], 'title': r[1], 'product': r[2], 'format': r[3],
+        'goal': r[4], 'hooks': r[5] if r[5] else [],
+        'template': r[6], 'xp': r[7],
+        'unlock_after': r[8], 'status': r[9],
+        'unlocked': (r[10] or 0) >= r[8],
+    } for r in rows]})
+
+
+def start_mission(cur, conn, user_id, mission_id):
+    if not mission_id:
+        return err('mission_id required')
+    cur.execute(
+        f"INSERT INTO {SCHEMA}.user_missions (user_id, mission_id, status) VALUES (%s, %s, 'active') ON CONFLICT DO NOTHING",
+        (user_id, mission_id)
+    )
+    conn.commit()
+    return ok({'ok': True})
+
+
+def complete_mission(cur, conn, user_id, mission_id):
+    if not mission_id:
+        return err('mission_id required')
+    cur.execute(f"SELECT xp_reward FROM {SCHEMA}.missions WHERE id = %s", (mission_id,))
+    m = cur.fetchone()
+    if not m:
+        return err('Миссия не найдена', 404)
+    cur.execute(
+        f"UPDATE {SCHEMA}.user_missions SET status = 'done', completed_at = NOW() WHERE user_id = %s AND mission_id = %s",
+        (user_id, mission_id)
+    )
+    cur.execute(f"UPDATE {SCHEMA}.users SET xp = xp + %s WHERE id = %s RETURNING xp", (m[0], user_id))
+    new_xp = cur.fetchone()[0]
+    new_level = max(1, new_xp // 300)
+    cur.execute(f"UPDATE {SCHEMA}.users SET level = %s WHERE id = %s", (new_level, user_id))
+    conn.commit()
+    return ok({'ok': True, 'xp_gained': m[0], 'total_xp': new_xp})
+
+
+def get_portfolio(cur, user_id):
+    cur.execute(f"""
+        SELECT p.id, p.user_id, u.username,
+               p.mission_id, m.title as mission_title,
+               p.post_url, p.platform, p.format, p.notes,
+               p.views, p.likes, p.published_at
+        FROM {SCHEMA}.portfolio_posts p
+        JOIN {SCHEMA}.users u ON p.user_id = u.id
+        LEFT JOIN {SCHEMA}.missions m ON p.mission_id = m.id
+        ORDER BY p.published_at DESC
+        LIMIT 30
     """)
     rows = cur.fetchall()
-    rating = []
-    badges = {1: '🏆', 2: '🥈', 3: '🥉'}
-    for r in rows:
-        rank = r[5]
-        rating.append({
-            'rank': rank, 'name': r[1], 'avatar': r[2], 'xp': r[3], 'level': r[4],
-            'badge': badges.get(rank, '⭐'),
-            'isMe': r[0] == user_id,
-        })
-    return ok({'rating': rating})
+    return ok({'posts': [{
+        'id': r[0], 'user_id': r[1], 'username': r[2],
+        'mission_id': r[3], 'mission': r[4],
+        'url': r[5], 'platform': r[6], 'format': r[7], 'notes': r[8],
+        'views': r[9], 'likes': r[10], 'published_at': str(r[11]),
+        'is_mine': r[1] == user_id,
+    } for r in rows]})
 
 
-def get_achievements(cur, user_id):
-    cur.execute(f"""
-        SELECT a.id, a.title, a.description, a.emoji, a.xp_reward, a.rarity, a.accent_color,
-               CASE WHEN ua.id IS NOT NULL THEN true ELSE false END as unlocked
-        FROM {SCHEMA}.achievements a
-        LEFT JOIN {SCHEMA}.user_achievements ua ON ua.achievement_id = a.id AND ua.user_id = %s
-        ORDER BY a.sort_order
-    """, (user_id,))
-    rows = cur.fetchall()
-    achievements = [{'id': r[0], 'title': r[1], 'desc': r[2], 'emoji': r[3],
-                     'xp': r[4], 'rarity': r[5], 'color': r[6], 'unlocked': r[7]} for r in rows]
-    return ok({'achievements': achievements})
-
-
-def get_posts(cur, user_id):
-    cur.execute(f"""
-        SELECT p.id, u.username, u.avatar, p.content, p.tag, p.likes_count, p.comments_count,
-               p.created_at, u.xp,
-               CASE WHEN pl.id IS NOT NULL THEN true ELSE false END as liked_by_me
-        FROM {SCHEMA}.posts p
-        JOIN {SCHEMA}.users u ON p.user_id = u.id
-        LEFT JOIN {SCHEMA}.post_likes pl ON pl.post_id = p.id AND pl.user_id = %s AND pl.active = TRUE
-        ORDER BY p.created_at DESC
-        LIMIT 20
-    """, (user_id,))
-    rows = cur.fetchall()
-    COLORS = ['#a855f7', '#f472b6', '#22d3ee', '#4ade80', '#fb923c', '#facc15']
-    posts = []
-    for i, r in enumerate(rows):
-        created = r[7]
-        now = datetime.now()
-        diff = now - created
-        if diff.seconds < 3600:
-            time_label = f"{diff.seconds // 60} мин назад"
-        elif diff.days == 0:
-            time_label = f"{diff.seconds // 3600} ч назад"
-        elif diff.days == 1:
-            time_label = "Вчера"
-        else:
-            time_label = f"{diff.days} дн назад"
-        posts.append({
-            'id': r[0], 'author': r[1], 'avatar': r[2], 'content': r[3],
-            'tag': r[4], 'likes': r[5], 'comments': r[6],
-            'time': time_label, 'color': COLORS[i % len(COLORS)],
-            'liked_by_me': r[9],
-        })
-    return ok({'posts': posts})
-
-
-def toggle_like(cur, conn, user_id, post_id):
-    if not post_id:
-        return err('post_id required')
-    cur.execute(f"SELECT id, active FROM {SCHEMA}.post_likes WHERE user_id = %s AND post_id = %s", (user_id, post_id))
-    existing = cur.fetchone()
-    if existing:
-        currently_active = existing[1]
-        new_active = not currently_active
-        delta = 1 if new_active else -1
-        cur.execute(f"UPDATE {SCHEMA}.post_likes SET active = %s WHERE id = %s", (new_active, existing[0]))
-        cur.execute(f"UPDATE {SCHEMA}.posts SET likes_count = GREATEST(0, likes_count + %s) WHERE id = %s RETURNING likes_count", (delta, post_id))
-        new_count = cur.fetchone()[0]
-        conn.commit()
-        return ok({'liked': new_active, 'likes': new_count})
-    else:
-        cur.execute(
-            f"INSERT INTO {SCHEMA}.post_likes (user_id, post_id, active) VALUES (%s, %s, TRUE) ON CONFLICT DO NOTHING",
-            (user_id, post_id)
-        )
-        cur.execute(f"UPDATE {SCHEMA}.posts SET likes_count = likes_count + 1 WHERE id = %s RETURNING likes_count", (post_id,))
-        new_count = cur.fetchone()[0]
-        conn.commit()
-        return ok({'liked': True, 'likes': new_count})
-
-
-def create_post(cur, conn, user_id, body):
-    content = (body.get('content') or '').strip()
-    tag = (body.get('tag') or 'Пост').strip()
-    if not content:
-        return err('Текст поста обязателен')
-    if len(content) > 1000:
-        return err('Пост слишком длинный (макс 1000 символов)')
+def add_post(cur, conn, user_id, body):
+    url = (body.get('post_url') or '').strip()
+    platform = (body.get('platform') or 'instagram').strip()
+    fmt = (body.get('format') or 'post').strip()
+    notes = (body.get('notes') or '').strip()
+    mission_id = body.get('mission_id')
+    if not url:
+        return err('Ссылка на пост обязательна')
     cur.execute(
-        f"INSERT INTO {SCHEMA}.posts (user_id, content, tag) VALUES (%s, %s, %s) RETURNING id",
-        (user_id, content, tag)
+        f"INSERT INTO {SCHEMA}.portfolio_posts (user_id, mission_id, post_url, platform, format, notes) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
+        (user_id, mission_id or None, url, platform, fmt, notes)
     )
     post_id = cur.fetchone()[0]
+    cur.execute(f"UPDATE {SCHEMA}.users SET xp = xp + 100 WHERE id = %s RETURNING xp", (user_id,))
+    new_xp = cur.fetchone()[0]
     conn.commit()
-    return ok({'ok': True, 'post_id': post_id})
+    return ok({'ok': True, 'post_id': post_id, 'xp_gained': 100, 'total_xp': new_xp})
 
 
-def update_course_progress(cur, conn, user_id, course_id, lessons_done):
-    if course_id is None or lessons_done is None:
-        return err('course_id and lessons_done required')
-    cur.execute(f"SELECT total_lessons, xp_reward FROM {SCHEMA}.courses WHERE id = %s", (course_id,))
-    course = cur.fetchone()
-    if not course:
-        return err('Курс не найден', 404)
-    total_lessons, xp_reward = course
-    lessons_done = min(int(lessons_done), total_lessons)
-    cur.execute(f"""
-        INSERT INTO {SCHEMA}.user_course_progress (user_id, course_id, lessons_done)
-        VALUES (%s, %s, %s)
-        ON CONFLICT (user_id, course_id) DO UPDATE SET lessons_done = EXCLUDED.lessons_done,
-        completed_at = CASE WHEN EXCLUDED.lessons_done >= %s THEN NOW() ELSE NULL END
-    """, (user_id, course_id, lessons_done, total_lessons))
-    if lessons_done >= total_lessons:
-        cur.execute(f"UPDATE {SCHEMA}.users SET xp = xp + %s WHERE id = %s RETURNING xp", (xp_reward, user_id))
-        new_xp = cur.fetchone()[0]
-        new_level = max(1, new_xp // 300)
-        cur.execute(f"UPDATE {SCHEMA}.users SET level = %s WHERE id = %s", (new_level, user_id))
+def get_partner_links(cur, user_id):
+    cur.execute(
+        f"SELECT id, product, link, clicks, conversions FROM {SCHEMA}.partner_links WHERE user_id = %s ORDER BY id",
+        (user_id,)
+    )
+    rows = cur.fetchall()
+    return ok({'links': [{'id': r[0], 'product': r[1], 'link': r[2], 'clicks': r[3], 'conversions': r[4]} for r in rows]})
+
+
+def update_profile(cur, conn, user_id, body):
+    platform = body.get('platform', 'instagram')
+    show_face = body.get('show_face', True)
+    bio_link = body.get('bio_link', '')
+    onboarded = body.get('onboarded', False)
+    cur.execute(
+        f"UPDATE {SCHEMA}.users SET platform = %s, show_face = %s, bio_link = %s, onboarded = %s WHERE id = %s",
+        (platform, show_face, bio_link, onboarded, user_id)
+    )
     conn.commit()
-    return ok({'ok': True, 'lessons_done': lessons_done})
+    return ok({'ok': True})
+
+
+def get_profile(cur, user_id):
+    if not user_id:
+        return err('Не авторизован', 401)
+    cur.execute(
+        f"""SELECT id, username, email, avatar, xp, level, streak,
+                   platform, season_day, onboarded, bio_link,
+                   (SELECT COUNT(*) FROM {SCHEMA}.user_lessons WHERE user_id = %s) as lessons_done,
+                   (SELECT COUNT(*) FROM {SCHEMA}.user_missions WHERE user_id = %s AND status = 'done') as missions_done,
+                   (SELECT COUNT(*) FROM {SCHEMA}.portfolio_posts WHERE user_id = %s) as posts_count
+            FROM {SCHEMA}.users WHERE id = %s""",
+        (user_id, user_id, user_id, user_id)
+    )
+    r = cur.fetchone()
+    if not r:
+        return err('Не найден', 404)
+    return ok({'profile': {
+        'id': r[0], 'username': r[1], 'email': r[2], 'avatar': r[3],
+        'xp': r[4], 'level': r[5], 'streak': r[6],
+        'platform': r[7], 'season_day': r[8], 'onboarded': r[9], 'bio_link': r[10],
+        'lessons_done': r[11], 'missions_done': r[12], 'posts_count': r[13],
+    }})

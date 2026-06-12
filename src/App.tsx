@@ -1,114 +1,125 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
-  BookOpenIcon,
+  MapIcon,
   CheckCircleIcon,
-  TrophyIcon,
-  StarIcon,
-  UserGroupIcon,
+  FolderOpenIcon,
   UserCircleIcon,
   BoltIcon,
   FireIcon,
   ChevronRightIcon,
+  ChevronDownIcon,
   PlusIcon,
   XMarkIcon,
-  HeartIcon,
-  ChatBubbleOvalLeftIcon,
-  ShareIcon,
+  CheckIcon,
+  ClockIcon,
+  LockClosedIcon,
   ArrowRightOnRectangleIcon,
   BellIcon,
   PencilIcon,
-  LockClosedIcon,
-  CheckIcon,
-  AcademicCapIcon,
-  ClockIcon,
+  ShareIcon,
   SparklesIcon,
   PlayIcon,
-  ChartBarIcon,
-  NewspaperIcon,
-  Squares2X2Icon,
-  IdentificationIcon,
+  LinkIcon,
+  GlobeAltIcon,
+  ArrowTopRightOnSquareIcon,
+  RocketLaunchIcon,
+  TrophyIcon,
+  StarIcon,
 } from "@heroicons/react/24/solid";
+import { ArrowRightIcon } from "@heroicons/react/24/outline";
 
-// ─── URLs ──────────────────────────────────────────────────────────────────
+// ─── Config ─────────────────────────────────────────────────────────────────
 const AUTH_URL = "https://functions.poehali.dev/16228047-1a09-4827-af8c-d5ca8dd48885";
 const API_URL  = "https://functions.poehali.dev/58712cb3-8e82-4bb3-9940-6fa8d4df92b0";
-const TOKEN_KEY = "aiquest_token";
+const TOKEN_KEY = "mission_token";
 
-// ─── Palette ──────────────────────────────────────────────────────────────
-const G    = "#2d7a4f";
-const GL   = "#e8f5ee";
-const GM   = "#3d9962";
-const B    = "#8b5e3c";
-const BL   = "#f5ede4";
-const BM   = "#a67048";
-const STONE = "#f5f1ec";
-const ACCENTS = [G, B, GM, BM, "#4a7c59", "#7a4f2d", "#5c9e72", "#9e6b42"];
+// ─── Palette ─────────────────────────────────────────────────────────────────
+const G  = "#1a6640";   // тёмно-зелёный основной
+const GL = "#eaf4ee";   // зелёный background
+const GM = "#2e8c58";   // зелёный mid
+const B  = "#7a4f2c";   // коричневый
+const BL = "#f7ede0";   // коричневый background
+const BM = "#9e6b3c";   // коричневый mid
+const INK    = "#1a1208"; // почти-чёрный текст
+const MUTED  = "#8c7a68"; // приглушённый текст
+const BORDER = "#e2d5c4"; // бордер
 
-// ─── Types ─────────────────────────────────────────────────────────────────
-interface User { id: number; username: string; email: string; avatar: string; xp: number; level: number; streak: number; }
-interface Course { id: number; title: string; emoji: string; xp: number; duration: string; level: string; color: string; accent: string; lessons: number; done: number; progress: number; tags: string[]; }
-interface Task { id: number; title: string; xp: number; deadline: string; difficulty: string; emoji: string; color: string; completed: boolean; }
-interface RatingEntry { rank: number; name: string; avatar: string; xp: number; level: number; badge: string; isMe: boolean; }
-interface Achievement { id: number; title: string; desc: string; emoji: string; xp: number; rarity: string; color: string; unlocked: boolean; }
-interface Post { id: number; author: string; avatar: string; content: string; tag: string; likes: number; comments: number; time: string; color: string; liked_by_me: boolean; }
-type Tab = "courses" | "tasks" | "rating" | "profile" | "community" | "achievements";
-
-// ─── API helpers ────────────────────────────────────────────────────────────
-function getToken() { return localStorage.getItem(TOKEN_KEY) || ""; }
-async function apiPost(url: string, body: Record<string, unknown>) {
-  const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json", "X-Session-Token": getToken() }, body: JSON.stringify(body) });
-  return res.json();
-}
-async function apiGet(url: string) {
-  const res = await fetch(url, { headers: { "X-Session-Token": getToken() } });
-  return res.json();
-}
-const authPost = (body: Record<string, string>) => apiPost(AUTH_URL, body);
-const api      = (body: Record<string, unknown>) => apiPost(API_URL, body);
-
-// ─── Rarity styles ──────────────────────────────────────────────────────────
-const rarityMap: Record<string, { bg: string; text: string; border: string }> = {
-  "Легендарное": { bg: "#fff7ed", text: "#92400e", border: "#fcd9a4" },
-  "Эпическое":   { bg: GL,       text: "#14532d", border: "#bcdece" },
-  "Редкое":      { bg: BL,       text: "#78350f", border: "#dbc9b4" },
-  "Обычное":     { bg: "#f3f4f6", text: "#6b7280", border: "#d1d5db" },
+const PHASE_CONFIG = {
+  prep:      { label: "День 1–7", desc: "Подготовка", color: BM, bg: BL },
+  publish:   { label: "День 8–21", desc: "Публикации", color: GM, bg: GL },
+  monetize:  { label: "День 22–30", desc: "Монетизация", color: G, bg: GL },
 };
 
-// ─── Shared UI ──────────────────────────────────────────────────────────────
-function XpBar({ progress, green = true }: { progress: number; green?: boolean }) {
-  return (
-    <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: "#e8e0d6" }}>
-      <div className="h-full rounded-full relative overflow-hidden transition-all duration-700"
-        style={{ width: `${Math.min(progress, 100)}%`, background: green ? `linear-gradient(90deg, ${G}, ${GM})` : `linear-gradient(90deg, ${B}, ${BM})` }}>
-        <div className="absolute inset-0 animate-shimmer bg-gradient-to-r from-transparent via-white/40 to-transparent" />
-      </div>
-    </div>
-  );
+// ─── Types ───────────────────────────────────────────────────────────────────
+interface User {
+  id: number; username: string; email: string; avatar: string;
+  xp: number; level: number; streak: number;
+  platform?: string; onboarded?: boolean; bio_link?: string;
 }
-
-function Skeleton({ className = "" }: { className?: string }) {
-  return <div className={`animate-pulse rounded-xl ${className}`} style={{ background: "#f0ebe4" }} />;
+interface Profile extends User {
+  lessons_done: number; missions_done: number; posts_count: number; season_day: number;
 }
+interface Lesson {
+  id: number; day: number; title: string; subtitle: string;
+  duration: number; phase: string;
+  checklist: { text: string }[];
+  completed: boolean;
+}
+interface Mission {
+  id: number; title: string; product: string | null; format: string;
+  goal: string; hooks: string[]; template: string; xp: number;
+  unlock_after: number; status: string | null; unlocked: boolean;
+}
+interface PortfolioPost {
+  id: number; user_id: number; username: string;
+  mission_id: number | null; mission: string | null;
+  url: string; platform: string; format: string; notes: string;
+  views: number; likes: number; published_at: string; is_mine: boolean;
+}
+type Tab = "path" | "missions" | "portfolio" | "profile";
 
-function Tag({ children, accent = G }: { children: React.ReactNode; accent?: string }) {
+// ─── API ─────────────────────────────────────────────────────────────────────
+const getToken = () => localStorage.getItem(TOKEN_KEY) || "";
+const apiPost = async (url: string, body: Record<string, unknown>) => {
+  const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json", "X-Session-Token": getToken() }, body: JSON.stringify(body) });
+  return r.json();
+};
+const apiGet = async (url: string) => {
+  const r = await fetch(url, { headers: { "X-Session-Token": getToken() } });
+  return r.json();
+};
+const authPost = (b: Record<string, string>) => apiPost(AUTH_URL, b);
+const api = (b: Record<string, unknown>) => apiPost(API_URL, b);
+
+// ─── UI primitives ────────────────────────────────────────────────────────────
+function Pill({ children, color = G, bg = GL }: { children: React.ReactNode; color?: string; bg?: string }) {
   return (
-    <span className="badge-game text-[10px]" style={{ background: `${accent}18`, color: accent, border: `1px solid ${accent}30` }}>
+    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wide"
+      style={{ color, background: bg, border: `1px solid ${color}25` }}>
       {children}
     </span>
   );
 }
+function Card({ children, className = "", style = {} }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
+  return (
+    <div className={`bg-white rounded-2xl ${className}`} style={{ border: `1px solid ${BORDER}`, boxShadow: "0 1px 6px rgba(0,0,0,0.05)", ...style }}>
+      {children}
+    </div>
+  );
+}
+function Skel({ h = 16 }: { h?: number }) {
+  return <div className="animate-pulse rounded-xl w-full" style={{ height: h, background: "#f0e8dc" }} />;
+}
 
-const NAV_ITEMS: { id: Tab; label: string; Icon: React.FC<React.SVGProps<SVGSVGElement>> }[] = [
-  { id: "courses",      label: "Курсы",      Icon: BookOpenIcon },
-  { id: "tasks",        label: "Задания",    Icon: CheckCircleIcon },
-  { id: "rating",       label: "Рейтинг",   Icon: TrophyIcon },
-  { id: "achievements", label: "Достижения", Icon: StarIcon },
-  { id: "community",    label: "Сообщество", Icon: UserGroupIcon },
-  { id: "profile",      label: "Профиль",   Icon: UserCircleIcon },
+const NAV: { id: Tab; label: string; Icon: React.FC<React.SVGProps<SVGSVGElement>> }[] = [
+  { id: "path",      label: "Путь",      Icon: MapIcon },
+  { id: "missions",  label: "Миссии",    Icon: RocketLaunchIcon },
+  { id: "portfolio", label: "Портфолио", Icon: FolderOpenIcon },
+  { id: "profile",   label: "Профиль",   Icon: UserCircleIcon },
 ];
 
-// ─── Auth Screen ─────────────────────────────────────────────────────────────
-function AuthScreen({ onAuth }: { onAuth: (user: User) => void }) {
+// ─── Auth ─────────────────────────────────────────────────────────────────────
+function AuthScreen({ onAuth }: { onAuth: (u: User) => void }) {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [form, setForm] = useState({ username: "", email: "", login: "", password: "" });
   const [error, setError] = useState("");
@@ -128,593 +139,82 @@ function AuthScreen({ onAuth }: { onAuth: (user: User) => void }) {
   };
 
   return (
-    <div className="min-h-screen grid-bg font-rubik flex items-center justify-center px-4">
+    <div className="min-h-screen flex items-center justify-center px-4 font-rubik" style={{ background: "#faf7f2" }}>
       <div className="w-full max-w-sm animate-scale-in">
-        <div className="text-center mb-8">
-          <div className="w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-green pulse-ring" style={{ background: G }}>
-            <AcademicCapIcon className="w-10 h-10 text-white" />
+        {/* Logo */}
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center gap-3 mb-5">
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: G }}>
+              <RocketLaunchIcon className="w-6 h-6 text-white" />
+            </div>
+            <span className="font-mono-rubik text-3xl tracking-tight" style={{ color: INK }}>MISSION</span>
           </div>
-          <h1 className="font-mono-rubik text-3xl tracking-tight" style={{ color: G }}>AIQuest</h1>
-          <p className="text-sm mt-1" style={{ color: BM }}>Обучение ИИ — это игра</p>
+          <p className="text-sm leading-relaxed" style={{ color: MUTED }}>
+            Ты не проходишь курс.<br />
+            <strong style={{ color: G }}>Ты получаешь миссию и выполняешь её публично.</strong>
+          </p>
         </div>
-        <div className="card-game rounded-3xl p-6">
-          <div className="flex rounded-xl p-1 mb-6" style={{ background: STONE }}>
+
+        <Card className="p-6">
+          {/* Toggle */}
+          <div className="flex rounded-xl p-1 mb-6" style={{ background: "#f5ede0" }}>
             {(["login", "register"] as const).map(m => (
               <button key={m} onClick={() => { setMode(m); setError(""); }}
-                className="flex-1 py-2 rounded-lg text-sm font-semibold transition-all duration-200"
+                className="flex-1 py-2 rounded-lg text-sm font-semibold transition-all"
                 style={mode === m ? { background: "#fff", color: G, boxShadow: "0 1px 4px rgba(0,0,0,0.1)" } : { color: BM }}>
-                {m === "login" ? "Войти" : "Регистрация"}
+                {m === "login" ? "Войти" : "Начать"}
               </button>
             ))}
           </div>
+
           <form onSubmit={submit} className="space-y-3">
             {mode === "register" && (
               <div>
-                <label className="text-xs mb-1 block font-medium" style={{ color: BM }}>Имя игрока</label>
-                <input value={form.username} onChange={set("username")} placeholder="SuperAI_User"
-                  className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-colors"
-                  style={{ background: STONE, border: "1px solid #e8e0d6", color: "#2d2015" }} />
-              </div>
-            )}
-            {mode === "register" ? (
-              <div>
-                <label className="text-xs mb-1 block font-medium" style={{ color: BM }}>Email</label>
-                <input type="email" value={form.email} onChange={set("email")} placeholder="you@example.com"
-                  className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-colors"
-                  style={{ background: STONE, border: "1px solid #e8e0d6", color: "#2d2015" }} />
-              </div>
-            ) : (
-              <div>
-                <label className="text-xs mb-1 block font-medium" style={{ color: BM }}>Email или имя</label>
-                <input value={form.login} onChange={set("login")} placeholder="you@example.com"
-                  className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-colors"
-                  style={{ background: STONE, border: "1px solid #e8e0d6", color: "#2d2015" }} />
+                <label className="block text-xs font-semibold mb-1" style={{ color: MUTED }}>Имя</label>
+                <input value={form.username} onChange={set("username")} placeholder="creator_name"
+                  className="w-full px-4 py-3 rounded-xl text-sm outline-none"
+                  style={{ background: "#faf7f2", border: `1px solid ${BORDER}`, color: INK }} />
               </div>
             )}
             <div>
-              <label className="text-xs mb-1 block font-medium" style={{ color: BM }}>Пароль</label>
-              <input type="password" value={form.password} onChange={set("password")} placeholder="••••••••"
-                className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-colors"
-                style={{ background: STONE, border: "1px solid #e8e0d6", color: "#2d2015" }} />
+              <label className="block text-xs font-semibold mb-1" style={{ color: MUTED }}>
+                {mode === "register" ? "Email" : "Email или имя"}
+              </label>
+              <input
+                type={mode === "register" ? "email" : "text"}
+                value={mode === "register" ? form.email : form.login}
+                onChange={mode === "register" ? set("email") : set("login")}
+                placeholder="you@example.com"
+                className="w-full px-4 py-3 rounded-xl text-sm outline-none"
+                style={{ background: "#faf7f2", border: `1px solid ${BORDER}`, color: INK }} />
             </div>
-            {error && <div className="px-4 py-3 rounded-xl text-sm" style={{ background: "#fef2f2", border: "1px solid #fca5a5", color: "#dc2626" }}>{error}</div>}
+            <div>
+              <label className="block text-xs font-semibold mb-1" style={{ color: MUTED }}>Пароль</label>
+              <input type="password" value={form.password} onChange={set("password")} placeholder="••••••••"
+                className="w-full px-4 py-3 rounded-xl text-sm outline-none"
+                style={{ background: "#faf7f2", border: `1px solid ${BORDER}`, color: INK }} />
+            </div>
+            {error && <p className="text-sm px-3 py-2 rounded-xl" style={{ background: "#fef2f2", color: "#dc2626" }}>{error}</p>}
             <button type="submit" disabled={loading}
-              className="w-full py-3 rounded-xl font-bold text-white text-sm transition-all active:scale-95 disabled:opacity-50 mt-2 flex items-center justify-center gap-2"
-              style={{ background: G, boxShadow: `0 4px 16px ${G}40` }}>
-              {loading ? <><ClockIcon className="w-4 h-4" /> Загрузка...</>
-                : mode === "login"
-                  ? <><BoltIcon className="w-4 h-4" /> Войти в игру</>
-                  : <><SparklesIcon className="w-4 h-4" /> Создать аккаунт</>}
+              className="w-full py-3 rounded-xl font-bold text-white text-sm mt-1 flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-60"
+              style={{ background: G }}>
+              {loading ? <ClockIcon className="w-4 h-4 animate-spin" /> : <RocketLaunchIcon className="w-4 h-4" />}
+              {loading ? "Загрузка..." : mode === "login" ? "Войти" : "Получить первую миссию"}
             </button>
           </form>
-        </div>
-        <p className="text-center text-xs mt-4" style={{ color: BM, opacity: 0.7 }}>
-          Учи ИИ-сервисы · Зарабатывай XP · Побеждай
-        </p>
+        </Card>
       </div>
     </div>
   );
 }
 
-// ─── Courses Tab ─────────────────────────────────────────────────────────────
-const COURSE_ICONS = [BookOpenIcon, AcademicCapIcon, SparklesIcon, PlayIcon, ChartBarIcon, NewspaperIcon];
-
-function CoursesTab({ onXpGain }: { onXpGain: (xp: number, total: number) => void }) {
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    apiGet(API_URL).then(d => { if (d.courses) setCourses(d.courses); setLoading(false); });
-  }, []);
-
-  const startLesson = async (course: Course) => {
-    if (course.done >= course.lessons) return;
-    const newDone = course.done + 1;
-    const data = await api({ action: "update_course_progress", course_id: course.id, lessons_done: newDone });
-    if (data.ok) {
-      setCourses(cs => cs.map(c => c.id === course.id
-        ? { ...c, done: newDone, progress: Math.round(newDone / c.lessons * 100) } : c));
-      if (newDone >= course.lessons) onXpGain(course.xp, -1);
-    }
-  };
-
+// ─── XP Bar ───────────────────────────────────────────────────────────────────
+function XpBar({ progress, color = G }: { progress: number; color?: string }) {
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between animate-fade-in">
-        <div>
-          <h2 className="text-2xl font-bold" style={{ color: "#1a1008" }}>Курсы по ИИ</h2>
-          <p className="text-sm mt-0.5" style={{ color: BM }}>{courses.length} курсов доступно</p>
-        </div>
-        <Tag accent={G}>Актуально</Tag>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {loading ? Array(6).fill(0).map((_, i) => <Skeleton key={i} className="h-52" />) :
-          courses.map((c, i) => {
-            const accent = ACCENTS[i % ACCENTS.length];
-            const isGreen = i % 2 === 0;
-            const CourseIcon = COURSE_ICONS[i % COURSE_ICONS.length];
-            return (
-              <div key={c.id} className={`card-game rounded-2xl overflow-hidden hover-lift cursor-pointer animate-fade-in stagger-${Math.min(i+1,6)}`}>
-                <div className="h-1.5 w-full" style={{ background: `linear-gradient(90deg, ${accent}, ${isGreen ? BM : GM})` }} />
-                <div className="p-5">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
-                        style={{ background: `${accent}18`, border: `1px solid ${accent}30` }}>
-                        <CourseIcon className="w-6 h-6" style={{ color: accent }} />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-sm leading-tight" style={{ color: "#1a1008" }}>{c.title}</h3>
-                        <div className="flex items-center gap-1 mt-1 text-xs" style={{ color: BM }}>
-                          <ClockIcon className="w-3 h-3" /><span>{c.duration}</span>
-                          <span className="mx-1">·</span>
-                          <span>{c.lessons} уроков</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-right flex-shrink-0 ml-2">
-                      <div className="text-xs font-bold mb-1" style={{ color: accent }}>+{c.xp} XP</div>
-                      <Tag accent={isGreen ? G : B}>{c.level}</Tag>
-                    </div>
-                  </div>
-                  <div className="flex gap-1.5 mb-4 flex-wrap">
-                    {c.tags.map(t => <Tag key={t} accent={accent}>{t}</Tag>)}
-                  </div>
-                  <div className="space-y-1.5">
-                    <div className="flex justify-between text-xs" style={{ color: BM }}>
-                      <span>{c.done}/{c.lessons} уроков</span><span>{c.progress}%</span>
-                    </div>
-                    <XpBar progress={c.progress} green={isGreen} />
-                  </div>
-                  <button onClick={() => startLesson(c)} disabled={c.done >= c.lessons}
-                    className="mt-4 w-full py-2.5 rounded-xl text-sm font-semibold transition-all active:scale-95 disabled:opacity-60 flex items-center justify-center gap-2"
-                    style={c.progress >= 100
-                      ? { background: GL, color: G, border: `1px solid ${G}30` }
-                      : { background: accent, color: "#fff", boxShadow: `0 3px 12px ${accent}40` }}>
-                    {c.progress >= 100
-                      ? <><CheckIcon className="w-4 h-4" /> Пройден</>
-                      : c.progress > 0
-                        ? <><PlayIcon className="w-4 h-4" /> Продолжить</>
-                        : <><PlayIcon className="w-4 h-4" /> Начать курс</>}
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-      </div>
-    </div>
-  );
-}
-
-// ─── Tasks Tab ────────────────────────────────────────────────────────────────
-const TASK_ICONS = [SparklesIcon, NewspaperIcon, Squares2X2Icon, PlayIcon, ChartBarIcon];
-
-function TasksTab({ onXpGain }: { onXpGain: (xp: number, total: number) => void }) {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [completing, setCompleting] = useState<number | null>(null);
-
-  useEffect(() => {
-    api({ action: "get_tasks" }).then(d => { if (d.tasks) setTasks(d.tasks); setLoading(false); });
-  }, []);
-
-  const complete = async (task: Task) => {
-    if (task.completed || completing) return;
-    setCompleting(task.id);
-    const data = await api({ action: "complete_task", task_id: task.id });
-    setCompleting(null);
-    if (data.ok) {
-      setTasks(ts => ts.map(t => t.id === task.id ? { ...t, completed: true } : t));
-      onXpGain(data.xp_gained, data.total_xp);
-    }
-  };
-
-  const active = tasks.filter(t => !t.completed);
-  const done   = tasks.filter(t => t.completed);
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between animate-fade-in">
-        <div>
-          <h2 className="text-2xl font-bold" style={{ color: "#1a1008" }}>Задания</h2>
-          <p className="text-sm mt-0.5" style={{ color: BM }}>{active.length} активных · {done.length} выполнено</p>
-        </div>
-        <div className="badge-game flex items-center gap-1.5" style={{ background: BL, color: B, border: `1px solid ${B}30` }}>
-          <BoltIcon className="w-3 h-3" />{active.reduce((s, t) => s + t.xp, 0)} XP доступно
-        </div>
-      </div>
-      <div className="space-y-3">
-        {loading ? Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-20" />) :
-          active.map((t, i) => {
-            const accent = i % 2 === 0 ? G : B;
-            const accentL = i % 2 === 0 ? GL : BL;
-            const TaskIcon = TASK_ICONS[i % TASK_ICONS.length];
-            return (
-              <div key={t.id} className={`card-game rounded-2xl p-4 animate-fade-in stagger-${i+1} hover-lift`}>
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-                    style={{ background: `${accent}15`, border: `1px solid ${accent}25` }}>
-                    <TaskIcon className="w-6 h-6" style={{ color: accent }} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-sm" style={{ color: "#1a1008" }}>{t.title}</h3>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="flex items-center gap-1 text-[11px]" style={{ color: BM }}>
-                        <ClockIcon className="w-3 h-3" />{t.deadline}
-                      </span>
-                      <Tag accent={accent}>{t.difficulty}</Tag>
-                    </div>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <div className="font-bold text-sm" style={{ color: accent }}>+{t.xp}</div>
-                    <div className="text-[10px]" style={{ color: BM }}>XP</div>
-                  </div>
-                  <button onClick={() => complete(t)} disabled={completing === t.id}
-                    className="ml-1 w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-all active:scale-90 hover:opacity-80 disabled:opacity-50"
-                    style={{ background: accentL, color: accent, border: `1px solid ${accent}30` }}>
-                    {completing === t.id
-                      ? <ClockIcon className="w-4 h-4 animate-spin" />
-                      : <CheckIcon className="w-5 h-5" />}
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-      </div>
-      {done.length > 0 && (
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: BM, opacity: 0.6 }}>Выполнено</p>
-          <div className="space-y-2">
-            {done.map(t => (
-              <div key={t.id} className="card-game rounded-2xl p-4 opacity-50">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: STONE }}>
-                    <CheckCircleIcon className="w-5 h-5" style={{ color: G }} />
-                  </div>
-                  <div className="flex-1"><h3 className="font-medium text-sm line-through" style={{ color: BM }}>{t.title}</h3></div>
-                  <CheckCircleIcon className="w-5 h-5 flex-shrink-0" style={{ color: G }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Rating Tab ───────────────────────────────────────────────────────────────
-function RatingTab() {
-  const [rating, setRating] = useState<RatingEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    api({ action: "get_rating" }).then(d => { if (d.rating) setRating(d.rating); setLoading(false); });
-  }, []);
-
-  const top3 = rating.length >= 3 ? [rating[1], rating[0], rating[2]] : rating.slice(0, 3);
-  const podiumBg    = [BL, GL, BL];
-  const podiumColor = [B,  G,  B ];
-
-  return (
-    <div className="space-y-6">
-      <div className="animate-fade-in">
-        <h2 className="text-2xl font-bold" style={{ color: "#1a1008" }}>Рейтинг</h2>
-        <p className="text-sm mt-0.5" style={{ color: BM }}>Топ игроков по XP</p>
-      </div>
-      {loading ? <Skeleton className="h-40" /> : top3.length >= 2 && (
-        <div className="grid grid-cols-3 gap-3 animate-fade-in stagger-1">
-          {top3.map((p, i) => {
-            const isCenter = i === 1;
-            return (
-              <div key={p.rank} className={`card-game rounded-2xl p-4 text-center flex flex-col items-center gap-2 ${isCenter ? "shadow-green" : ""}`}
-                style={{ background: podiumBg[i], border: `1px solid ${podiumColor[i]}30` }}>
-                <TrophyIcon className="w-7 h-7" style={{ color: podiumColor[i] }} />
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${isCenter ? "pulse-ring" : ""}`}
-                  style={{ background: `${podiumColor[i]}20`, border: `2px solid ${podiumColor[i]}50` }}>
-                  <UserCircleIcon className="w-8 h-8" style={{ color: podiumColor[i] }} />
-                </div>
-                <div className="font-bold text-xs truncate w-full text-center" style={{ color: "#1a1008" }}>{p.name}</div>
-                <div className="font-bold text-xs" style={{ color: podiumColor[i] }}>{p.xp.toLocaleString()} XP</div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-      <div className="space-y-2">
-        {loading ? Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-16" />) :
-          rating.map((p, i) => (
-            <div key={p.rank} className={`card-game rounded-2xl px-4 py-3 flex items-center gap-3 animate-fade-in stagger-${Math.min(i+1,6)}`}
-              style={p.isMe ? { border: `1px solid ${G}40`, background: GL } : {}}>
-              <div className="w-8 text-center font-bold text-sm flex-shrink-0" style={{ color: p.rank <= 3 ? B : "#9ca3af" }}>#{p.rank}</div>
-              <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
-                style={{ background: p.isMe ? GL : STONE, border: `1.5px solid ${p.isMe ? G : "#e8e0d6"}` }}>
-                <UserCircleIcon className="w-6 h-6" style={{ color: p.isMe ? G : BM }} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-sm" style={{ color: p.isMe ? G : "#1a1008" }}>{p.name}</span>
-                  {p.isMe && <Tag accent={G}>Это ты</Tag>}
-                </div>
-                <div className="text-xs" style={{ color: BM }}>Уровень {p.level}</div>
-              </div>
-              <div className="text-right flex-shrink-0">
-                <div className="font-bold text-sm" style={{ color: "#1a1008" }}>{p.xp.toLocaleString()}</div>
-                <div className="text-[10px]" style={{ color: BM }}>XP</div>
-              </div>
-            </div>
-          ))}
-      </div>
-    </div>
-  );
-}
-
-// ─── Achievements Tab ─────────────────────────────────────────────────────────
-const ACHIEVEMENT_ICONS = [StarIcon, BoltIcon, TrophyIcon, SparklesIcon, ChartBarIcon, HeartIcon, FireIcon, AcademicCapIcon];
-
-function AchievementsTab() {
-  const [achievements, setAchievements] = useState<Achievement[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    api({ action: "get_achievements" }).then(d => { if (d.achievements) setAchievements(d.achievements); setLoading(false); });
-  }, []);
-
-  const unlocked = achievements.filter(a => a.unlocked);
-
-  return (
-    <div className="space-y-6">
-      <div className="animate-fade-in">
-        <h2 className="text-2xl font-bold" style={{ color: "#1a1008" }}>Достижения</h2>
-        <p className="text-sm mt-0.5" style={{ color: BM }}>{unlocked.length}/{achievements.length} разблокировано</p>
-      </div>
-      {!loading && achievements.length > 0 && (
-        <div className="card-game rounded-2xl p-4 animate-fade-in stagger-1">
-          <div className="flex justify-between text-sm mb-2">
-            <span style={{ color: BM }}>Прогресс коллекции</span>
-            <span className="font-bold" style={{ color: G }}>{unlocked.length}/{achievements.length}</span>
-          </div>
-          <XpBar progress={(unlocked.length / achievements.length) * 100} />
-        </div>
-      )}
-      <div className="grid grid-cols-2 gap-3">
-        {loading ? Array(8).fill(0).map((_, i) => <Skeleton key={i} className="h-36" />) :
-          achievements.map((a, i) => {
-            const rm = rarityMap[a.rarity] ?? rarityMap["Обычное"];
-            const AchIcon = ACHIEVEMENT_ICONS[i % ACHIEVEMENT_ICONS.length];
-            return (
-              <div key={a.id} className={`card-game rounded-2xl p-4 animate-fade-in stagger-${Math.min(i+1,6)} ${a.unlocked ? "hover-lift cursor-pointer" : "opacity-40"}`}
-                style={a.unlocked ? { border: `1px solid ${rm.border}` } : {}}>
-                <div className="flex items-start justify-between mb-3">
-                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
-                    style={a.unlocked ? { background: rm.bg, border: `1px solid ${rm.border}` } : { background: STONE }}>
-                    {a.unlocked
-                      ? <AchIcon className="w-6 h-6" style={{ color: rm.text }} />
-                      : <LockClosedIcon className="w-5 h-5" style={{ color: BM }} />}
-                  </div>
-                  <span className="badge-game text-[9px]" style={{ background: rm.bg, color: rm.text, border: `1px solid ${rm.border}` }}>{a.rarity}</span>
-                </div>
-                <h3 className="font-bold text-sm" style={{ color: "#1a1008" }}>{a.title}</h3>
-                <p className="text-xs mt-0.5 leading-relaxed" style={{ color: BM }}>{a.desc}</p>
-                <div className="mt-2 font-bold text-xs" style={{ color: a.unlocked ? G : "#9ca3af" }}>+{a.xp} XP</div>
-              </div>
-            );
-          })}
-      </div>
-    </div>
-  );
-}
-
-// ─── Community Tab ────────────────────────────────────────────────────────────
-function CommunityTab() {
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [newPost, setNewPost] = useState({ content: "", tag: "" });
-  const [posting, setPosting] = useState(false);
-
-  const load = useCallback(() => {
-    api({ action: "get_posts" }).then(d => { if (d.posts) setPosts(d.posts); setLoading(false); });
-  }, []);
-
-  useEffect(() => { load(); }, [load]);
-
-  const toggleLike = async (post: Post) => {
-    const data = await api({ action: "like_post", post_id: post.id });
-    if (data.liked !== undefined)
-      setPosts(ps => ps.map(p => p.id === post.id ? { ...p, likes: data.likes, liked_by_me: data.liked } : p));
-  };
-
-  const submitPost = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newPost.content.trim()) return;
-    setPosting(true);
-    const data = await api({ action: "create_post", content: newPost.content, tag: newPost.tag || "Пост" });
-    setPosting(false);
-    if (data.ok) { setNewPost({ content: "", tag: "" }); setShowForm(false); load(); }
-  };
-
-  const POST_COLORS = [G, B, GM, BM, "#4a7c59", "#7a4f2d"];
-  const POST_BG     = [GL, BL, GL, BL, GL, BL];
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between animate-fade-in">
-        <div>
-          <h2 className="text-2xl font-bold" style={{ color: "#1a1008" }}>Сообщество</h2>
-          <p className="text-sm mt-0.5" style={{ color: BM }}>Делитесь опытом с ИИ</p>
-        </div>
-        <button onClick={() => setShowForm(v => !v)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all active:scale-95 text-white"
-          style={{ background: showForm ? B : G }}>
-          {showForm ? <XMarkIcon className="w-4 h-4" /> : <PlusIcon className="w-4 h-4" />}
-          {showForm ? "Отмена" : "Пост"}
-        </button>
-      </div>
-      {showForm && (
-        <form onSubmit={submitPost} className="card-game rounded-2xl p-4 animate-fade-in space-y-3" style={{ border: `1px solid ${G}30` }}>
-          <textarea value={newPost.content} onChange={e => setNewPost(n => ({ ...n, content: e.target.value }))}
-            placeholder="Поделитесь своим опытом с ИИ-инструментами..." rows={3}
-            className="w-full px-4 py-3 rounded-xl text-sm outline-none resize-none"
-            style={{ background: STONE, border: "1px solid #e8e0d6", color: "#2d2015" }} />
-          <input value={newPost.tag} onChange={e => setNewPost(n => ({ ...n, tag: e.target.value }))}
-            placeholder="Тег (ChatGPT, Midjourney...)"
-            className="w-full px-4 py-3 rounded-xl text-sm outline-none"
-            style={{ background: STONE, border: "1px solid #e8e0d6", color: "#2d2015" }} />
-          <button type="submit" disabled={posting || !newPost.content.trim()}
-            className="w-full py-2.5 rounded-xl font-semibold text-white text-sm disabled:opacity-50 active:scale-95 transition-all flex items-center justify-center gap-2"
-            style={{ background: G }}>
-            {posting
-              ? <><ClockIcon className="w-4 h-4 animate-spin" /> Публикация...</>
-              : <><SparklesIcon className="w-4 h-4" /> Опубликовать</>}
-          </button>
-        </form>
-      )}
-      <div className="space-y-4">
-        {loading ? Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-32" />) :
-          posts.map((p, i) => {
-            const color = POST_COLORS[i % POST_COLORS.length];
-            const bg    = POST_BG[i % POST_BG.length];
-            return (
-              <div key={p.id} className={`card-game rounded-2xl p-4 animate-fade-in stagger-${Math.min(i+1,6)} hover-lift`}>
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                    style={{ background: bg, border: `1px solid ${color}25` }}>
-                    <UserCircleIcon className="w-6 h-6" style={{ color }} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-bold text-sm" style={{ color: "#1a1008" }}>{p.author}</span>
-                      <Tag accent={color}>{p.tag}</Tag>
-                      <span className="text-xs ml-auto" style={{ color: BM, opacity: 0.6 }}>{p.time}</span>
-                    </div>
-                    <p className="text-sm mt-2 leading-relaxed" style={{ color: "#3d2e1e" }}>{p.content}</p>
-                    <div className="flex items-center gap-4 mt-3">
-                      <button onClick={() => toggleLike(p)}
-                        className="flex items-center gap-1.5 text-xs transition-all active:scale-90"
-                        style={{ color: p.liked_by_me ? B : BM }}>
-                        <HeartIcon className="w-4 h-4" style={{ opacity: p.liked_by_me ? 1 : 0.5 }} />
-                        <span>{p.likes}</span>
-                      </button>
-                      <button className="flex items-center gap-1.5 text-xs" style={{ color: BM }}>
-                        <ChatBubbleOvalLeftIcon className="w-4 h-4 opacity-50" /><span>{p.comments}</span>
-                      </button>
-                      <button className="flex items-center gap-1.5 text-xs ml-auto" style={{ color: BM }}>
-                        <ShareIcon className="w-4 h-4 opacity-50" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-      </div>
-    </div>
-  );
-}
-
-// ─── Profile Tab ──────────────────────────────────────────────────────────────
-const UNLOCKED_ICONS = [StarIcon, BoltIcon, TrophyIcon, FireIcon, SparklesIcon, AcademicCapIcon];
-
-function ProfileTab({ user, onLogout, achievements }: { user: User; onLogout: () => void; achievements: Achievement[] }) {
-  const nextLevelXp = (user.level + 1) * 300;
-  const xpToNext = Math.max(0, nextLevelXp - user.xp);
-  const unlocked = achievements.filter(a => a.unlocked);
-
-  return (
-    <div className="space-y-5">
-      <div className="card-game-green rounded-3xl p-6 animate-fade-in">
-        <div className="flex items-center gap-4">
-          <div className="relative">
-            <div className="w-20 h-20 rounded-2xl flex items-center justify-center pulse-ring"
-              style={{ background: GL, border: `2px solid ${G}60` }}>
-              <UserCircleIcon className="w-12 h-12" style={{ color: G }} />
-            </div>
-            <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black text-white" style={{ background: B }}>
-              {user.level}
-            </div>
-          </div>
-          <div className="flex-1">
-            <h2 className="text-xl font-black" style={{ color: "#1a1008" }}>{user.username}</h2>
-            <p className="text-sm" style={{ color: BM }}>{user.email}</p>
-            <div className="flex items-center gap-3 mt-2">
-              <span className="font-bold flex items-center gap-1" style={{ color: G }}>
-                <BoltIcon className="w-4 h-4" />{user.xp.toLocaleString()} XP
-              </span>
-              {user.streak > 0 && (
-                <><span style={{ color: "#d0c0b0" }}>·</span>
-                  <span className="flex items-center gap-1 text-sm" style={{ color: B }}>
-                    <FireIcon className="w-4 h-4" />{user.streak} дней
-                  </span></>
-              )}
-            </div>
-          </div>
-        </div>
-        <div className="mt-4">
-          <div className="flex justify-between text-xs mb-1.5" style={{ color: BM }}>
-            <span>Уровень {user.level}</span>
-            <span>До {user.level + 1}: {xpToNext} XP</span>
-          </div>
-          <XpBar progress={Math.min(100, (user.xp / nextLevelXp) * 100)} />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-3 gap-3 animate-fade-in stagger-1">
-        {[
-          { value: String(unlocked.length), sub: "достижений", Icon: StarIcon, bg: GL, color: G },
-          { value: String(user.xp),          sub: "очков XP",  Icon: BoltIcon, bg: GL, color: G },
-          { value: String(user.streak),       sub: "дней подряд", Icon: FireIcon, bg: BL, color: B },
-        ].map((s, i) => (
-          <div key={i} className="card-game rounded-2xl p-4 text-center">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center mx-auto mb-2" style={{ background: s.bg }}>
-              <s.Icon className="w-4 h-4" style={{ color: s.color }} />
-            </div>
-            <div className="text-lg font-black" style={{ color: "#1a1008" }}>{s.value}</div>
-            <div className="text-[11px]" style={{ color: BM }}>{s.sub}</div>
-          </div>
-        ))}
-      </div>
-
-      {unlocked.length > 0 && (
-        <div className="animate-fade-in stagger-2">
-          <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: BM, opacity: 0.6 }}>Достижения</p>
-          <div className="flex gap-3 flex-wrap">
-            {unlocked.map((a, i) => {
-              const AIcon = UNLOCKED_ICONS[i % UNLOCKED_ICONS.length];
-              const rm = rarityMap[a.rarity] ?? rarityMap["Обычное"];
-              return (
-                <div key={a.id} className="w-14 h-14 rounded-2xl flex items-center justify-center hover-lift cursor-pointer"
-                  style={{ background: rm.bg, border: `1px solid ${rm.border}` }} title={a.title}>
-                  <AIcon className="w-6 h-6" style={{ color: rm.text }} />
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      <div className="space-y-2 animate-fade-in stagger-3">
-        <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: BM, opacity: 0.6 }}>Настройки</p>
-        {[
-          { label: "Редактировать профиль",  Icon: PencilIcon,                color: G, bg: GL },
-          { label: "Настройки уведомлений",  Icon: BellIcon,                  color: B, bg: BL },
-          { label: "Поделиться профилем",    Icon: ShareIcon,                 color: GM, bg: GL },
-          { label: "Идентификация",          Icon: IdentificationIcon,        color: BM, bg: BL },
-        ].map((item, i) => (
-          <button key={i} className="card-game w-full rounded-2xl px-4 py-3 flex items-center gap-3 text-left hover-lift">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: item.bg }}>
-              <item.Icon className="w-4 h-4" style={{ color: item.color }} />
-            </div>
-            <span className="text-sm font-medium flex-1" style={{ color: "#2d2015" }}>{item.label}</span>
-            <ChevronRightIcon className="w-4 h-4" style={{ color: BM }} />
-          </button>
-        ))}
-        <button onClick={onLogout} className="card-game w-full rounded-2xl px-4 py-3 flex items-center gap-3 text-left hover-lift">
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "#fef2f2" }}>
-            <ArrowRightOnRectangleIcon className="w-4 h-4 text-red-500" />
-          </div>
-          <span className="text-sm font-medium flex-1 text-red-500">Выйти из аккаунта</span>
-        </button>
+    <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: "#e2d5c4" }}>
+      <div className="h-full rounded-full relative overflow-hidden transition-all duration-500"
+        style={{ width: `${Math.min(100, progress)}%`, background: color }}>
+        <div className="absolute inset-0 animate-shimmer bg-gradient-to-r from-transparent via-white/30 to-transparent" />
       </div>
     </div>
   );
@@ -724,39 +224,596 @@ function ProfileTab({ user, onLogout, achievements }: { user: User; onLogout: ()
 function XpToast({ xp, onDone }: { xp: number; onDone: () => void }) {
   useEffect(() => { const t = setTimeout(onDone, 2500); return () => clearTimeout(t); }, [onDone]);
   return (
-    <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 animate-scale-in">
-      <div className="px-5 py-3 rounded-2xl font-bold text-sm flex items-center gap-2 text-white shadow-green"
-        style={{ background: G, boxShadow: `0 4px 20px ${G}50` }}>
-        <BoltIcon className="w-4 h-4" />+{xp} XP получено!
+    <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 animate-scale-in">
+      <div className="px-5 py-3 rounded-2xl text-sm font-bold text-white flex items-center gap-2"
+        style={{ background: G, boxShadow: `0 6px 24px ${G}50` }}>
+        <BoltIcon className="w-4 h-4" />+{xp} XP
       </div>
     </div>
   );
 }
 
-// ─── App ───────────────────────────────────────────────────────────────────────
+// ─── PATH TAB ─────────────────────────────────────────────────────────────────
+function PathTab({ onXpGain }: { onXpGain: (xp: number, total: number) => void }) {
+  const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [open, setOpen] = useState<number | null>(null);
+  const [completing, setCompleting] = useState<number | null>(null);
+
+  useEffect(() => {
+    apiGet(API_URL).then(d => { if (d.lessons) setLessons(d.lessons); setLoading(false); });
+  }, []);
+
+  const complete = async (lesson: Lesson) => {
+    if (lesson.completed || completing) return;
+    setCompleting(lesson.id);
+    const d = await api({ action: "complete_lesson", lesson_id: lesson.id });
+    setCompleting(null);
+    if (d.ok) {
+      setLessons(ls => ls.map(l => l.id === lesson.id ? { ...l, completed: true } : l));
+      if (!d.already) onXpGain(d.xp_gained, d.total_xp);
+    }
+  };
+
+  const done = lessons.filter(l => l.completed).length;
+  const total = lessons.length;
+  const phases = ["prep", "publish", "monetize"] as const;
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="animate-fade-in">
+        <h2 className="text-2xl font-bold" style={{ color: INK }}>Твой путь</h2>
+        <p className="text-sm mt-0.5" style={{ color: MUTED }}>30 дней от нуля до первой монетизации</p>
+      </div>
+
+      {/* Progress bar */}
+      {!loading && (
+        <Card className="p-5 animate-fade-in stagger-1">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="font-bold text-sm" style={{ color: INK }}>Прогресс сезона</p>
+              <p className="text-xs mt-0.5" style={{ color: MUTED }}>{done} из {total} уроков выполнено</p>
+            </div>
+            <div className="text-right">
+              <p className="text-2xl font-black" style={{ color: G }}>{done}</p>
+              <p className="text-xs" style={{ color: MUTED }}>/ {total}</p>
+            </div>
+          </div>
+          <XpBar progress={total > 0 ? (done / total) * 100 : 0} />
+        </Card>
+      )}
+
+      {/* Phases */}
+      {loading ? (
+        <div className="space-y-3">{Array(6).fill(0).map((_, i) => <Skel key={i} h={72} />)}</div>
+      ) : phases.map(phase => {
+        const phaseLessons = lessons.filter(l => l.phase === phase);
+        if (!phaseLessons.length) return null;
+        const cfg = PHASE_CONFIG[phase];
+        const pDone = phaseLessons.filter(l => l.completed).length;
+        return (
+          <div key={phase} className="space-y-2 animate-fade-in">
+            {/* Phase header */}
+            <div className="flex items-center gap-3 px-1 mb-3">
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: cfg.bg }}>
+                {phase === "prep" && <ClockIcon className="w-4 h-4" style={{ color: cfg.color }} />}
+                {phase === "publish" && <SparklesIcon className="w-4 h-4" style={{ color: cfg.color }} />}
+                {phase === "monetize" && <BoltIcon className="w-4 h-4" style={{ color: cfg.color }} />}
+              </div>
+              <div className="flex-1">
+                <p className="font-bold text-sm" style={{ color: INK }}>{cfg.desc}</p>
+                <p className="text-xs" style={{ color: MUTED }}>{cfg.label} · {pDone}/{phaseLessons.length}</p>
+              </div>
+              <Pill color={cfg.color} bg={cfg.bg}>{pDone}/{phaseLessons.length}</Pill>
+            </div>
+
+            {phaseLessons.map((lesson, i) => {
+              const isOpen = open === lesson.id;
+              const canDo = lesson.completed || i === 0 || phaseLessons[i - 1]?.completed;
+
+              return (
+                <Card key={lesson.id} className="overflow-hidden" style={lesson.completed ? { borderColor: `${G}40`, background: GL } : !canDo ? { opacity: 0.5 } : {}}>
+                  <button
+                    className="w-full p-4 text-left flex items-center gap-3"
+                    onClick={() => canDo && setOpen(isOpen ? null : lesson.id)}>
+                    {/* Status icon */}
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                      style={lesson.completed ? { background: G } : !canDo ? { background: "#f0e8dc" } : { background: GL, border: `1px solid ${G}30` }}>
+                      {lesson.completed
+                        ? <CheckIcon className="w-5 h-5 text-white" />
+                        : !canDo
+                          ? <LockClosedIcon className="w-4 h-4" style={{ color: MUTED }} />
+                          : <span className="text-xs font-black" style={{ color: G }}>{lesson.day}</span>}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm" style={{ color: lesson.completed ? G : INK }}>{lesson.title}</p>
+                      <p className="text-xs mt-0.5 truncate" style={{ color: MUTED }}>{lesson.subtitle}</p>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="flex items-center gap-1 text-xs" style={{ color: MUTED }}>
+                        <ClockIcon className="w-3 h-3" />{lesson.duration}м
+                      </span>
+                      {canDo && !lesson.completed && (
+                        <ChevronDownIcon className={`w-4 h-4 transition-transform ${isOpen ? "rotate-180" : ""}`} style={{ color: MUTED }} />
+                      )}
+                    </div>
+                  </button>
+
+                  {/* Expanded checklist */}
+                  {isOpen && canDo && !lesson.completed && (
+                    <div className="px-4 pb-4 animate-fade-in">
+                      <div className="rounded-xl p-3 mb-4 space-y-2" style={{ background: "#faf7f2" }}>
+                        {lesson.checklist.map((item, ci) => (
+                          <div key={ci} className="flex items-start gap-2 text-sm" style={{ color: INK }}>
+                            <CheckCircleIcon className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: `${G}60` }} />
+                            <span>{item.text}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <button
+                        onClick={() => complete(lesson)}
+                        disabled={completing === lesson.id}
+                        className="w-full py-3 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-60"
+                        style={{ background: G }}>
+                        {completing === lesson.id
+                          ? <ClockIcon className="w-4 h-4 animate-spin" />
+                          : <CheckIcon className="w-4 h-4" />}
+                        {completing === lesson.id ? "Сохраняем..." : "Выполнено — +50 XP"}
+                      </button>
+                    </div>
+                  )}
+                </Card>
+              );
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── MISSIONS TAB ─────────────────────────────────────────────────────────────
+function MissionsTab({ onXpGain }: { onXpGain: (xp: number, total: number) => void }) {
+  const [missions, setMissions] = useState<Mission[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [active, setActive] = useState<Mission | null>(null);
+
+  const load = useCallback(() => {
+    api({ action: "get_missions" }).then(d => { if (d.missions) setMissions(d.missions); setLoading(false); });
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  const start = async (m: Mission) => {
+    await api({ action: "start_mission", mission_id: m.id });
+    load();
+    setActive(m);
+  };
+
+  const complete = async (m: Mission) => {
+    const d = await api({ action: "complete_mission", mission_id: m.id });
+    if (d.ok) { onXpGain(d.xp_gained, d.total_xp); load(); setActive(null); }
+  };
+
+  if (active) {
+    return (
+      <div className="space-y-5 animate-fade-in">
+        <button onClick={() => setActive(null)} className="flex items-center gap-1.5 text-sm font-semibold" style={{ color: G }}>
+          <ChevronRightIcon className="w-4 h-4 rotate-180" /> Назад к миссиям
+        </button>
+
+        <div className="rounded-3xl p-6 text-white" style={{ background: `linear-gradient(135deg, ${G}, ${GM})` }}>
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <Pill color="white" bg="rgba(255,255,255,0.2)">{active.product || "Свободная миссия"}</Pill>
+              <h2 className="text-2xl font-black mt-2">{active.title}</h2>
+            </div>
+            <div className="flex items-center gap-1 px-3 py-1.5 rounded-xl" style={{ background: "rgba(255,255,255,0.15)" }}>
+              <BoltIcon className="w-4 h-4" /><span className="font-bold text-sm">+{active.xp} XP</span>
+            </div>
+          </div>
+          <div className="text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.85)" }}>
+            <strong>Формат:</strong> {active.format}
+          </div>
+          <div className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.85)" }}>
+            <strong>Цель:</strong> {active.goal}
+          </div>
+        </div>
+
+        {/* Hooks */}
+        <Card className="p-5">
+          <p className="font-bold text-sm mb-3" style={{ color: INK }}>Хуки для контента</p>
+          <div className="space-y-2">
+            {active.hooks.map((h, i) => (
+              <div key={i} className="flex items-start gap-3 p-3 rounded-xl" style={{ background: GL }}>
+                <span className="text-xs font-black w-5 h-5 rounded flex items-center justify-center flex-shrink-0" style={{ background: G, color: "#fff" }}>{i + 1}</span>
+                <p className="text-sm italic" style={{ color: INK }}>"{h}"</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* Template */}
+        {active.template && (
+          <Card className="p-5">
+            <p className="font-bold text-sm mb-3" style={{ color: INK }}>Шаблон публикации</p>
+            <pre className="text-sm whitespace-pre-wrap leading-relaxed font-rubik" style={{ color: MUTED }}>{active.template}</pre>
+          </Card>
+        )}
+
+        <button onClick={() => complete(active)}
+          className="w-full py-4 rounded-2xl font-bold text-white flex items-center justify-center gap-2 transition-all active:scale-95"
+          style={{ background: G }}>
+          <TrophyIcon className="w-5 h-5" />Миссия выполнена — получить {active.xp} XP
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="animate-fade-in">
+        <h2 className="text-2xl font-bold" style={{ color: INK }}>Миссии</h2>
+        <p className="text-sm mt-0.5" style={{ color: MUTED }}>Получи миссию — выполни её публично</p>
+      </div>
+
+      <div className="space-y-4">
+        {loading ? Array(3).fill(0).map((_, i) => <Skel key={i} h={120} />) :
+          missions.map((m, i) => (
+            <Card key={m.id} className={`overflow-hidden animate-fade-in stagger-${i + 1}`}
+              style={!m.unlocked ? { opacity: 0.55 } : m.status === "done" ? { borderColor: `${G}40` } : {}}>
+              {m.status === "active" && <div className="h-1 w-full" style={{ background: G }} />}
+              <div className="p-5">
+                <div className="flex items-start gap-3">
+                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
+                    style={m.status === "done" ? { background: G } : !m.unlocked ? { background: "#f0e8dc" } : { background: GL, border: `1px solid ${G}30` }}>
+                    {m.status === "done"
+                      ? <CheckIcon className="w-6 h-6 text-white" />
+                      : !m.unlocked
+                        ? <LockClosedIcon className="w-5 h-5" style={{ color: MUTED }} />
+                        : <RocketLaunchIcon className="w-5 h-5" style={{ color: G }} />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <h3 className="font-bold text-sm" style={{ color: INK }}>{m.title}</h3>
+                      {m.product && <Pill color={B} bg={BL}>{m.product}</Pill>}
+                    </div>
+                    <p className="text-xs" style={{ color: MUTED }}>{m.format}</p>
+                    {!m.unlocked && (
+                      <p className="text-xs mt-1 flex items-center gap-1" style={{ color: BM }}>
+                        <LockClosedIcon className="w-3 h-3" />Открывается после {m.unlock_after} уроков
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <BoltIcon className="w-4 h-4" style={{ color: G }} />
+                    <span className="font-bold text-sm" style={{ color: G }}>+{m.xp}</span>
+                  </div>
+                </div>
+
+                {m.unlocked && m.status !== "done" && (
+                  <button onClick={() => m.status === "active" ? setActive(m) : start(m)}
+                    className="mt-4 w-full py-2.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all active:scale-95"
+                    style={m.status === "active"
+                      ? { background: G, color: "#fff" }
+                      : { background: GL, color: G, border: `1px solid ${G}30` }}>
+                    <ArrowRightIcon className="w-4 h-4" />
+                    {m.status === "active" ? "Продолжить миссию" : "Взять миссию"}
+                  </button>
+                )}
+                {m.status === "done" && (
+                  <div className="mt-3 flex items-center gap-2 text-sm font-semibold" style={{ color: G }}>
+                    <CheckCircleIcon className="w-4 h-4" />Миссия выполнена
+                  </div>
+                )}
+              </div>
+            </Card>
+          ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── PORTFOLIO TAB ────────────────────────────────────────────────────────────
+const PLATFORMS = ["instagram", "tiktok", "telegram", "youtube"];
+const FORMATS   = ["reel", "story", "post", "short", "carousel"];
+const PLATFORM_COLORS: Record<string, string> = {
+  instagram: "#e1306c", tiktok: "#010101", telegram: "#2aabee", youtube: "#ff0000"
+};
+
+function PortfolioTab({ missions, onXpGain }: { missions: Mission[]; onXpGain: (xp: number, total: number) => void }) {
+  const [posts, setPosts] = useState<PortfolioPost[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ post_url: "", platform: "instagram", format: "reel", notes: "", mission_id: "" });
+  const [posting, setPosting] = useState(false);
+
+  const load = useCallback(() => {
+    api({ action: "get_portfolio" }).then(d => { if (d.posts) setPosts(d.posts); setLoading(false); });
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.post_url.trim()) return;
+    setPosting(true);
+    const d = await api({ action: "add_post", ...form, mission_id: form.mission_id ? parseInt(form.mission_id) : null });
+    setPosting(false);
+    if (d.ok) { setShowForm(false); setForm({ post_url: "", platform: "instagram", format: "reel", notes: "", mission_id: "" }); load(); onXpGain(d.xp_gained, d.total_xp); }
+  };
+
+  const myPosts  = posts.filter(p => p.is_mine);
+  const allPosts = posts.filter(p => !p.is_mine);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-start justify-between animate-fade-in">
+        <div>
+          <h2 className="text-2xl font-bold" style={{ color: INK }}>Портфолио</h2>
+          <p className="text-sm mt-0.5" style={{ color: MUTED }}>Твои публикации — твой результат</p>
+        </div>
+        <button onClick={() => setShowForm(v => !v)}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold text-white transition-all active:scale-95"
+          style={{ background: showForm ? B : G }}>
+          {showForm ? <XMarkIcon className="w-4 h-4" /> : <PlusIcon className="w-4 h-4" />}
+          {showForm ? "Отмена" : "Добавить"}
+        </button>
+      </div>
+
+      {/* Add form */}
+      {showForm && (
+        <Card className="p-5 animate-fade-in" style={{ borderColor: `${G}40` }}>
+          <p className="font-bold text-sm mb-4" style={{ color: INK }}>Добавить публикацию</p>
+          <form onSubmit={submit} className="space-y-3">
+            <div>
+              <label className="text-xs font-semibold mb-1 block" style={{ color: MUTED }}>Ссылка на пост</label>
+              <input value={form.post_url} onChange={e => setForm(f => ({ ...f, post_url: e.target.value }))}
+                placeholder="https://instagram.com/p/..."
+                className="w-full px-4 py-3 rounded-xl text-sm outline-none"
+                style={{ background: "#faf7f2", border: `1px solid ${BORDER}`, color: INK }} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-semibold mb-1 block" style={{ color: MUTED }}>Платформа</label>
+                <select value={form.platform} onChange={e => setForm(f => ({ ...f, platform: e.target.value }))}
+                  className="w-full px-4 py-3 rounded-xl text-sm outline-none"
+                  style={{ background: "#faf7f2", border: `1px solid ${BORDER}`, color: INK }}>
+                  {PLATFORMS.map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-semibold mb-1 block" style={{ color: MUTED }}>Формат</label>
+                <select value={form.format} onChange={e => setForm(f => ({ ...f, format: e.target.value }))}
+                  className="w-full px-4 py-3 rounded-xl text-sm outline-none"
+                  style={{ background: "#faf7f2", border: `1px solid ${BORDER}`, color: INK }}>
+                  {FORMATS.map(f => <option key={f} value={f}>{f}</option>)}
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-semibold mb-1 block" style={{ color: MUTED }}>Миссия (необязательно)</label>
+              <select value={form.mission_id} onChange={e => setForm(f => ({ ...f, mission_id: e.target.value }))}
+                className="w-full px-4 py-3 rounded-xl text-sm outline-none"
+                style={{ background: "#faf7f2", border: `1px solid ${BORDER}`, color: INK }}>
+                <option value="">— без миссии —</option>
+                {missions.map(m => <option key={m.id} value={m.id}>{m.title}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-semibold mb-1 block" style={{ color: MUTED }}>Заметка</label>
+              <input value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+                placeholder="Что снял, что понял..."
+                className="w-full px-4 py-3 rounded-xl text-sm outline-none"
+                style={{ background: "#faf7f2", border: `1px solid ${BORDER}`, color: INK }} />
+            </div>
+            <button type="submit" disabled={posting || !form.post_url.trim()}
+              className="w-full py-3 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-2 disabled:opacity-60 active:scale-95 transition-all"
+              style={{ background: G }}>
+              {posting ? <ClockIcon className="w-4 h-4 animate-spin" /> : <PlusIcon className="w-4 h-4" />}
+              {posting ? "Сохраняем..." : "Добавить публикацию — +100 XP"}
+            </button>
+          </form>
+        </Card>
+      )}
+
+      {/* My posts */}
+      {loading ? (
+        <div className="space-y-3">{Array(3).fill(0).map((_, i) => <Skel key={i} h={88} />)}</div>
+      ) : (
+        <>
+          {myPosts.length > 0 && (
+            <div className="space-y-3">
+              <p className="text-xs font-bold uppercase tracking-widest" style={{ color: MUTED }}>Мои публикации</p>
+              {myPosts.map((p, i) => (
+                <Card key={p.id} className={`p-4 animate-fade-in stagger-${i + 1}`} style={{ borderColor: `${G}30` }}>
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                      style={{ background: `${PLATFORM_COLORS[p.platform] || G}18` }}>
+                      <GlobeAltIcon className="w-5 h-5" style={{ color: PLATFORM_COLORS[p.platform] || G }} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Pill color={PLATFORM_COLORS[p.platform] || G} bg={`${PLATFORM_COLORS[p.platform] || G}15`}>{p.platform}</Pill>
+                        <Pill color={BM} bg={BL}>{p.format}</Pill>
+                        {p.mission && <Pill color={G} bg={GL}>{p.mission}</Pill>}
+                      </div>
+                      {p.notes && <p className="text-sm mt-1.5" style={{ color: MUTED }}>{p.notes}</p>}
+                      <div className="flex items-center gap-3 mt-2">
+                        <a href={p.url} target="_blank" rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-xs font-semibold transition-opacity hover:opacity-70"
+                          style={{ color: G }}>
+                          <ArrowTopRightOnSquareIcon className="w-3 h-3" />Открыть пост
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {myPosts.length === 0 && !showForm && (
+            <Card className="p-8 text-center">
+              <FolderOpenIcon className="w-12 h-12 mx-auto mb-3" style={{ color: `${G}50` }} />
+              <p className="font-bold text-sm" style={{ color: INK }}>Портфолио пока пусто</p>
+              <p className="text-xs mt-1" style={{ color: MUTED }}>Добавь первую публикацию — она станет частью твоего портфолио</p>
+            </Card>
+          )}
+
+          {/* Community posts */}
+          {allPosts.length > 0 && (
+            <div className="space-y-3">
+              <p className="text-xs font-bold uppercase tracking-widest" style={{ color: MUTED }}>Другие участники</p>
+              {allPosts.map((p, i) => (
+                <Card key={p.id} className={`p-4 animate-fade-in stagger-${i + 1}`}>
+                  <div className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: GL }}>
+                      <UserCircleIcon className="w-6 h-6" style={{ color: G }} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold text-sm" style={{ color: INK }}>{p.username}</span>
+                        <Pill color={PLATFORM_COLORS[p.platform] || G} bg={`${PLATFORM_COLORS[p.platform] || G}15`}>{p.platform}</Pill>
+                        {p.mission && <Pill color={G} bg={GL}>{p.mission}</Pill>}
+                      </div>
+                      {p.notes && <p className="text-xs mt-1" style={{ color: MUTED }}>{p.notes}</p>}
+                    </div>
+                    <a href={p.url} target="_blank" rel="noopener noreferrer">
+                      <ArrowTopRightOnSquareIcon className="w-4 h-4 flex-shrink-0" style={{ color: MUTED }} />
+                    </a>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+// ─── PROFILE TAB ─────────────────────────────────────────────────────────────
+function ProfileTab({ user, onLogout }: { user: User; onLogout: () => void }) {
+  const [profile, setProfile] = useState<Profile | null>(null);
+
+  useEffect(() => {
+    api({ action: "get_profile" }).then(d => { if (d.profile) setProfile(d.profile); });
+  }, []);
+
+  const nextLevelXp = (user.level + 1) * 300;
+  const p = profile;
+
+  return (
+    <div className="space-y-5">
+      {/* Hero */}
+      <Card className="p-6 animate-fade-in" style={{ background: `linear-gradient(135deg, ${GL}, #fff)`, borderColor: `${G}30` }}>
+        <div className="flex items-center gap-4">
+          <div className="relative">
+            <div className="w-20 h-20 rounded-2xl flex items-center justify-center" style={{ background: GL, border: `2px solid ${G}50` }}>
+              <UserCircleIcon className="w-12 h-12" style={{ color: G }} />
+            </div>
+            <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black text-white" style={{ background: B }}>
+              {user.level}
+            </div>
+          </div>
+          <div className="flex-1">
+            <h2 className="text-xl font-black" style={{ color: INK }}>{user.username}</h2>
+            <p className="text-sm" style={{ color: MUTED }}>{user.email}</p>
+            <div className="flex items-center gap-2 mt-2">
+              <BoltIcon className="w-4 h-4" style={{ color: G }} />
+              <span className="font-bold" style={{ color: G }}>{user.xp.toLocaleString()} XP</span>
+              {user.streak > 0 && (
+                <><span style={{ color: BORDER }}>·</span>
+                  <FireIcon className="w-4 h-4" style={{ color: B }} />
+                  <span className="font-semibold text-sm" style={{ color: B }}>{user.streak} дней</span></>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="mt-4">
+          <div className="flex justify-between text-xs mb-1.5" style={{ color: MUTED }}>
+            <span>Уровень {user.level}</span>
+            <span>До {user.level + 1}: {Math.max(0, nextLevelXp - user.xp)} XP</span>
+          </div>
+          <XpBar progress={(user.xp / nextLevelXp) * 100} />
+        </div>
+      </Card>
+
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-3 animate-fade-in stagger-1">
+        {[
+          { value: p ? String(p.lessons_done) : "—", label: "уроков", Icon: CheckCircleIcon, bg: GL, color: G },
+          { value: p ? String(p.missions_done) : "—", label: "миссий", Icon: RocketLaunchIcon, bg: GL, color: G },
+          { value: p ? String(p.posts_count) : "—", label: "публикаций", Icon: FolderOpenIcon, bg: BL, color: B },
+        ].map((s, i) => (
+          <Card key={i} className="p-4 text-center">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center mx-auto mb-2" style={{ background: s.bg }}>
+              <s.Icon className="w-4 h-4" style={{ color: s.color }} />
+            </div>
+            <p className="text-xl font-black" style={{ color: INK }}>{s.value}</p>
+            <p className="text-[11px]" style={{ color: MUTED }}>{s.label}</p>
+          </Card>
+        ))}
+      </div>
+
+      {/* Settings */}
+      <div className="space-y-2 animate-fade-in stagger-2">
+        <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: MUTED }}>Аккаунт</p>
+        {[
+          { label: "Редактировать профиль", Icon: PencilIcon, color: G, bg: GL },
+          { label: "Партнёрские ссылки",    Icon: LinkIcon,   color: B, bg: BL },
+          { label: "Уведомления",           Icon: BellIcon,   color: BM, bg: BL },
+          { label: "Поделиться портфолио",  Icon: ShareIcon,  color: GM, bg: GL },
+        ].map((item, i) => (
+          <Card key={i} className="overflow-hidden">
+            <button className="w-full px-4 py-3.5 flex items-center gap-3 text-left hover:bg-stone-50 transition-colors">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: item.bg }}>
+                <item.Icon className="w-4 h-4" style={{ color: item.color }} />
+              </div>
+              <span className="text-sm font-medium flex-1" style={{ color: INK }}>{item.label}</span>
+              <ChevronRightIcon className="w-4 h-4" style={{ color: MUTED }} />
+            </button>
+          </Card>
+        ))}
+        <Card className="overflow-hidden">
+          <button onClick={onLogout} className="w-full px-4 py-3.5 flex items-center gap-3 text-left hover:bg-red-50 transition-colors">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "#fef2f2" }}>
+              <ArrowRightOnRectangleIcon className="w-4 h-4 text-red-500" />
+            </div>
+            <span className="text-sm font-medium text-red-500 flex-1">Выйти из аккаунта</span>
+          </button>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+// ─── APP ──────────────────────────────────────────────────────────────────────
 export default function App() {
-  const [tab, setTab] = useState<Tab>("courses");
+  const [tab, setTab] = useState<Tab>("path");
   const [user, setUser] = useState<User | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [xpToast, setXpToast] = useState<number | null>(null);
-  const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [missions, setMissions] = useState<Mission[]>([]);
+  const missionsLoaded = useRef(false);
 
   const checkSession = useCallback(async () => {
     const token = localStorage.getItem(TOKEN_KEY);
     if (!token) { setAuthChecked(true); return; }
-    const data = await apiGet(AUTH_URL);
-    if (data.user) setUser(data.user);
+    const d = await apiGet(AUTH_URL);
+    if (d.user) setUser(d.user);
     else localStorage.removeItem(TOKEN_KEY);
     setAuthChecked(true);
   }, []);
 
   useEffect(() => { checkSession(); }, [checkSession]);
 
-  const achievementsLoaded = useRef(false);
   useEffect(() => {
-    if (user && !achievementsLoaded.current) {
-      achievementsLoaded.current = true;
-      api({ action: "get_achievements" }).then(d => { if (d.achievements) setAchievements(d.achievements); });
+    if (user && !missionsLoaded.current) {
+      missionsLoaded.current = true;
+      api({ action: "get_missions" }).then(d => { if (d.missions) setMissions(d.missions); });
     }
   }, [user]);
 
@@ -770,17 +827,18 @@ export default function App() {
 
   const handleXpGain = (xp: number, totalXp: number) => {
     setXpToast(xp);
-    if (totalXp >= 0 && user) setUser(u => u ? { ...u, xp: totalXp, level: Math.max(1, Math.floor(totalXp / 300)) } : u);
+    if (totalXp >= 0 && user)
+      setUser(u => u ? { ...u, xp: totalXp, level: Math.max(1, Math.floor(totalXp / 300)) } : u);
   };
 
   if (!authChecked) {
     return (
-      <div className="min-h-screen grid-bg flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "#faf7f2" }}>
         <div className="text-center">
-          <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse" style={{ background: GL }}>
-            <AcademicCapIcon className="w-9 h-9" style={{ color: G }} />
+          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse" style={{ background: GL }}>
+            <RocketLaunchIcon className="w-8 h-8" style={{ color: G }} />
           </div>
-          <div className="text-sm font-rubik" style={{ color: BM }}>Загрузка...</div>
+          <p className="text-sm font-rubik" style={{ color: MUTED }}>Загрузка...</p>
         </div>
       </div>
     );
@@ -788,57 +846,64 @@ export default function App() {
 
   if (!user) return <AuthScreen onAuth={handleAuth} />;
 
-  const renderTab = () => {
-    switch (tab) {
-      case "courses":      return <CoursesTab onXpGain={handleXpGain} />;
-      case "tasks":        return <TasksTab onXpGain={handleXpGain} />;
-      case "rating":       return <RatingTab />;
-      case "achievements": return <AchievementsTab />;
-      case "community":    return <CommunityTab />;
-      case "profile":      return <ProfileTab user={user} onLogout={handleLogout} achievements={achievements} />;
-    }
-  };
+  const activeMissions = missions.filter(m => m.status === "active").length;
+  const doneMissions   = missions.filter(m => m.status === "done").length;
 
   return (
-    <div className="min-h-screen grid-bg font-rubik">
+    <div className="min-h-screen font-rubik" style={{ background: "#faf7f2" }}>
       {xpToast !== null && <XpToast xp={xpToast} onDone={() => setXpToast(null)} />}
-      <div className="max-w-2xl mx-auto px-4 pb-28 pt-6">
-        <div className="flex items-center justify-between mb-6 animate-fade-in">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: G }}>
-              <AcademicCapIcon className="w-5 h-5 text-white" />
+
+      {/* Header */}
+      <div className="sticky top-0 z-40 border-b" style={{ background: "rgba(250,247,242,0.95)", backdropFilter: "blur(12px)", borderColor: BORDER }}>
+        <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: G }}>
+              <RocketLaunchIcon className="w-4 h-4 text-white" />
             </div>
-            <span className="font-mono-rubik text-lg tracking-tight" style={{ color: G }}>AIQuest</span>
+            <span className="font-mono-rubik text-base tracking-tight" style={{ color: INK }}>MISSION</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl" style={{ background: GL, border: `1px solid ${G}30` }}>
-              <BoltIcon className="w-4 h-4" style={{ color: G }} />
-              <span className="font-bold text-sm" style={{ color: G }}>{user.xp.toLocaleString()} XP</span>
+            {activeMissions > 0 && (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold" style={{ background: GL, color: G }}>
+                <RocketLaunchIcon className="w-3 h-3" />{activeMissions} активна
+              </div>
+            )}
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold" style={{ background: GL, color: G }}>
+              <BoltIcon className="w-3 h-3" />{user.xp.toLocaleString()} XP
             </div>
-            <button onClick={() => setTab("profile")}
-              className="w-9 h-9 rounded-xl flex items-center justify-center transition-transform hover:scale-110"
-              style={{ background: BL, border: `1px solid ${B}30` }}>
-              <UserCircleIcon className="w-5 h-5" style={{ color: B }} />
-            </button>
           </div>
         </div>
-        <div key={tab}>{renderTab()}</div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 z-50">
-        <div className="max-w-2xl mx-auto px-4 pb-4">
-          <div className="rounded-2xl px-2 py-2 flex items-center justify-around"
-            style={{ background: "rgba(255,255,255,0.97)", backdropFilter: "blur(16px)", border: "1px solid #e8e0d6", boxShadow: "0 -2px 16px rgba(0,0,0,0.08)" }}>
-            {NAV_ITEMS.map(item => {
-              const active = tab === item.id;
+      {/* Content */}
+      <div className="max-w-2xl mx-auto px-4 py-6 pb-28">
+        <div key={tab}>
+          {tab === "path"      && <PathTab onXpGain={handleXpGain} />}
+          {tab === "missions"  && <MissionsTab onXpGain={handleXpGain} />}
+          {tab === "portfolio" && <PortfolioTab missions={missions} onXpGain={handleXpGain} />}
+          {tab === "profile"   && <ProfileTab user={user} onLogout={handleLogout} />}
+        </div>
+      </div>
+
+      {/* Bottom nav */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 border-t" style={{ borderColor: BORDER }}>
+        <div className="max-w-2xl mx-auto">
+          <div className="flex" style={{ background: "rgba(250,247,242,0.98)", backdropFilter: "blur(12px)" }}>
+            {NAV.map(item => {
+              const isActive = tab === item.id;
+              const badge = item.id === "missions" ? activeMissions : item.id === "portfolio" ? doneMissions : 0;
               return (
                 <button key={item.id} onClick={() => setTab(item.id)}
-                  className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-all duration-200 min-w-[48px]"
-                  style={active ? { background: GL } : {}}>
-                  <item.Icon className={`w-5 h-5 transition-all duration-200 ${active ? "scale-110" : ""}`}
-                    style={{ color: active ? G : "#a0917e" }} />
-                  <span className="text-[10px] font-semibold transition-colors duration-200"
-                    style={{ color: active ? G : "#a0917e" }}>{item.label}</span>
+                  className="flex-1 flex flex-col items-center justify-center gap-1 py-3 relative transition-colors"
+                  style={isActive ? { color: G } : { color: MUTED }}>
+                  {badge > 0 && (
+                    <span className="absolute top-2 right-1/4 w-4 h-4 rounded-full text-[10px] font-black text-white flex items-center justify-center" style={{ background: G }}>
+                      {badge}
+                    </span>
+                  )}
+                  <item.Icon className={`w-5 h-5 transition-transform ${isActive ? "scale-110" : ""}`} />
+                  <span className="text-[10px] font-semibold">{item.label}</span>
+                  {isActive && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full" style={{ background: G }} />}
                 </button>
               );
             })}
