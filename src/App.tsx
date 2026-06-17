@@ -272,11 +272,6 @@ function LandingScreen({ onAuth }: { onAuth: (u: User) => void }) {
                 alt="" style={{ position: "absolute", top: 0, left: "8%", width: 72, imageRendering: "pixelated",
                   animation: "float-pixel 3s steps(4) infinite" }} />
 
-              {/* Окно с видео (центр-верх) */}
-              <img src="https://cdn.poehali.dev/projects/5137e801-4ad0-4168-8f01-73f78e2e10e1/bucket/6655d7dc-0eca-458e-b212-c7c3f19e21f4.png"
-                alt="" style={{ position: "absolute", top: 10, left: "22%", width: 220, imageRendering: "pixelated",
-                  animation: "float-pixel 3.5s steps(4) infinite", animationDelay: "400ms" }} />
-
               {/* График (правый верх) */}
               <img src="https://cdn.poehali.dev/projects/5137e801-4ad0-4168-8f01-73f78e2e10e1/bucket/244e8ef2-465a-4d07-9730-72d958c3b81f.png"
                 alt="" style={{ position: "absolute", top: 0, right: "2%", width: 160, imageRendering: "pixelated",
@@ -313,7 +308,7 @@ function LandingScreen({ onAuth }: { onAuth: (u: User) => void }) {
             <div className="grid grid-cols-3 divide-x" style={{ borderColor: G1 }}>
               {[
                 { label: "НОВИЧОК",      sub: "ТВОЙ СТАРТ",       img: "https://cdn.poehali.dev/projects/5137e801-4ad0-4168-8f01-73f78e2e10e1/bucket/03c291e8-743c-4756-83be-038f5fa139c7.png", arrow: true },
-                { label: "БЛОГЕР",       sub: "СОЗДАЁШЬ КОНТЕНТ", img: "https://cdn.poehali.dev/projects/5137e801-4ad0-4168-8f01-73f78e2e10e1/bucket/6655d7dc-0eca-458e-b212-c7c3f19e21f4.png", arrow: true },
+                { label: "БЛОГЕР",       sub: "СОЗДАЁШЬ КОНТЕНТ", img: "https://cdn.poehali.dev/projects/5137e801-4ad0-4168-8f01-73f78e2e10e1/bucket/df9363d2-79e9-4a76-a59f-ce4f8bc8fb92.png", arrow: true },
                 { label: "МОНЕТИЗАЦИЯ",  sub: "ПЕРВЫЕ РЕЗУЛЬТАТЫ",img: "https://cdn.poehali.dev/projects/5137e801-4ad0-4168-8f01-73f78e2e10e1/bucket/244e8ef2-465a-4d07-9730-72d958c3b81f.png", arrow: false },
               ].map((stage, i) => (
                 <div key={i} className="flex items-center gap-4 px-6 py-4 relative"
