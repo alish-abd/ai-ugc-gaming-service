@@ -310,19 +310,19 @@ function LandingScreen({ onAuth }: { onAuth: (u: User) => void }) {
       <section style={{ background: G0, borderTop: `4px solid #111`, borderBottom: `4px solid #111` }}>
         <div className="max-w-6xl mx-auto px-6 py-8 grid grid-cols-2 md:grid-cols-4 gap-8">
           {[
-            { num: "30",   unit: "ДНЕЙ",   label: "до первой монетизации", img: "https://cdn.poehali.dev/projects/5137e801-4ad0-4168-8f01-73f78e2e10e1/bucket/446a9633-23aa-41f5-83a3-648b83efbb61.png" },
-            { num: "15",   unit: "ПОСТОВ", label: "реальных публикаций",   img: "https://cdn.poehali.dev/projects/5137e801-4ad0-4168-8f01-73f78e2e10e1/bucket/dfd8400c-3152-4d2b-8183-4cf81d218da6.png" },
-            { num: "4",    unit: "МИССИИ", label: "с хуками и шаблонами",  img: "https://cdn.poehali.dev/projects/5137e801-4ad0-4168-8f01-73f78e2e10e1/bucket/16517b3b-ff6f-445e-b14e-4663f0c00b06.png" },
-            { num: "100%", unit: "ЧЕСТНО", label: "без обещаний",          img: "https://cdn.poehali.dev/projects/5137e801-4ad0-4168-8f01-73f78e2e10e1/bucket/0c167c01-4a30-4065-b2c7-657f0fb34da8.png" },
+            { num: "30",   unit: "ДНЕЙ",   label: "до первой монетизации", img: "https://cdn.poehali.dev/projects/5137e801-4ad0-4168-8f01-73f78e2e10e1/bucket/5330fac6-f3b2-4298-9fcd-499665d6b74d.png" },
+            { num: "15",   unit: "ПОСТОВ", label: "реальных публикаций",   img: "https://cdn.poehali.dev/projects/5137e801-4ad0-4168-8f01-73f78e2e10e1/bucket/32ba8633-c067-4c4b-a44d-d4ede8bfff91.png" },
+            { num: "4",    unit: "МИССИИ", label: "с хуками и шаблонами",  img: "https://cdn.poehali.dev/projects/5137e801-4ad0-4168-8f01-73f78e2e10e1/bucket/f47337f8-23d1-4f18-954e-3d7584ea4bfc.png" },
+            { num: "100%", unit: "ЧЕСТНО", label: "без обещаний",          img: "https://cdn.poehali.dev/projects/5137e801-4ad0-4168-8f01-73f78e2e10e1/bucket/70a85a0d-d998-4dfe-adf6-4099f06ac25e.png" },
           ].map((s, i) => (
             <div key={i} className="flex items-center gap-4" {...reveal(`stat-${i}`, i * 80)}>
-              <img src={s.img} alt="" style={{ width: 48, height: 48, objectFit: "contain", imageRendering: "pixelated", flexShrink: 0 }} />
+              <img src={s.img} alt="" style={{ width: 72, height: 72, objectFit: "contain", imageRendering: "pixelated", flexShrink: 0 }} />
               <div>
                 <div className="flex items-baseline gap-2">
                   <p className="font-pixel text-2xl" style={{ color: G4 }}>{s.num}</p>
                   <p className="font-pixel text-[9px]" style={{ color: G4 }}>{s.unit}</p>
                 </div>
-                <p className="font-vt323 text-lg" style={{ color: G5 }}>{s.label}</p>
+                <p className="font-vt323 text-lg" style={{ color: "#fff" }}>{s.label}</p>
               </div>
             </div>
           ))}
