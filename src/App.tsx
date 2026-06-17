@@ -243,15 +243,14 @@ function LandingScreen({ onAuth }: { onAuth: (u: User) => void }) {
               </div>
 
               <h1 className="font-pixel mb-5" style={{ fontSize: "clamp(18px, 2.4vw, 28px)", color: INK, lineHeight: 1.9 }}>
-                ТЫ НЕ ПРОХОДИШЬ КУРС.<br />
-                <span style={{ color: G2 }}>ТЫ ПОЛУЧАЕШЬ МИССИЮ</span><br />
-                И ВЫПОЛНЯЕШЬ ЕЁ ПУБЛИЧНО.
+                НАУЧИСЬ СНИМАТЬ РИЛСЫ<br />
+                <span style={{ color: G2 }}>ПРО AI-СЕРВИСЫ</span><br />
+                И СРАЗУ ЗАРАБАТЫВАЙ НА РЕКЛАМЕ.
               </h1>
 
               <p className="font-vt323 text-xl mb-8" style={{ color: MUTED, lineHeight: 1.5, maxWidth: 380 }}>
-                За 30 дней — настроенный блог, 10–15 публикаций,
-                понятный контент-процесс и первые попытки монетизации.
-                Честно. Без обещаний стать популярным.
+                Снимаешь видео про AI-сервисы, выполняешь задания
+                и получаешь первый рекламный оффер.
               </p>
 
               <div className="flex flex-wrap items-center gap-5">
