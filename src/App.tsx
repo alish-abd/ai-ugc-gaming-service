@@ -32,22 +32,22 @@ const API_URL   = "https://functions.poehali.dev/58712cb3-8e82-4bb3-9940-6fa8d4d
 const TOKEN_KEY = "mission_token";
 
 // ─── 16-bit palette ──────────────────────────────────────────────────────────
-const G0 = "#0a2e0a";
-const G1 = "#1a5c1a";
-const G2 = "#2e8c2e";
-const G3 = "#3daa3d";
-const G4 = "#58cc58";
-const G5 = "#a8e8a8";
-const G6 = "#d4f4d4";
-const G7 = "#f0fff0";
-const INK   = "#0f1f0f";
-const PAPER = "#f4faf4";
-const MUTED = "#4a7a4a";
+const G0 = "#1c1c1c";   // нейтральная тень
+const G1 = "#333333";   // нейтральный тёмный
+const G2 = "#2a8c2a";   // зелёный — только акцент
+const G3 = "#36aa36";   // зелёный hover
+const G4 = "#52c852";   // зелёный индикатор
+const G5 = "#c8e8c8";   // бледный зелёный
+const G6 = "#f0f0ee";   // нейтральный светлый
+const G7 = "#f9f9f7";   // почти белый
+const INK   = "#1c1c1c";
+const PAPER = "#f7f7f5";
+const MUTED = "#777770";
 
 const PHASE_CFG = {
   prep:     { label: "ДЕНЬ 1-7",   desc: "ПОДГОТОВКА",   color: G1, bg: G6 },
   publish:  { label: "ДЕНЬ 8-21",  desc: "ПУБЛИКАЦИИ",   color: G2, bg: G6 },
-  monetize: { label: "ДЕНЬ 22-30", desc: "МОНЕТИЗАЦИЯ",  color: G3, bg: G7 },
+  monetize: { label: "ДЕНЬ 22-30", desc: "МОНЕТИЗАЦИЯ",  color: G1, bg: G6 },
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -285,9 +285,9 @@ function PathTab({ onXpGain }: { onXpGain: (xp: number, total: number) => void }
 
       {/* Season progress */}
       {!loading && (
-        <PixelCard green className="p-4 animate-fade-in stagger-1">
+        <PixelCard className="p-4 animate-fade-in stagger-1">
           <div className="flex items-center justify-between mb-3">
-            <p className="font-pixel text-[9px]" style={{ color: G1 }}>ПРОГРЕСС СЕЗОНА</p>
+            <p className="font-pixel text-[9px]" style={{ color: INK }}>ПРОГРЕСС СЕЗОНА</p>
             <PixelBadge dark>{done}/{total}</PixelBadge>
           </div>
           <PixelProgress value={done} max={total || 1} />
@@ -365,8 +365,8 @@ function PathTab({ onXpGain }: { onXpGain: (xp: number, total: number) => void }
 
                     {/* Expanded */}
                     {isOpen && canDo && !lesson.completed && (
-                      <div className="px-4 pb-4 animate-fade-in border-t-2" style={{ borderColor: G5 }}>
-                        <div className="p-3 my-3 space-y-2" style={{ background: G7, border: `2px solid ${G5}` }}>
+                      <div className="px-4 pb-4 animate-fade-in border-t-2" style={{ borderColor: "#d4d4d0" }}>
+                        <div className="p-3 my-3 space-y-2" style={{ background: G6, border: `2px solid #d4d4d0` }}>
                           {lesson.checklist.map((item, ci) => (
                             <div key={ci} className="flex items-start gap-2">
                               <div className="check-pixel mt-0.5">
@@ -441,16 +441,16 @@ function MissionsTab({ onXpGain }: { onXpGain: (xp: number, total: number) => vo
             </div>
           </div>
           <div className="divider-pixel my-3" />
-          <p className="font-vt323 text-xl" style={{ color: G5 }}>{active.format}</p>
-          <p className="font-vt323 text-lg mt-1" style={{ color: G6 }}>{active.goal}</p>
+          <p className="font-vt323 text-xl" style={{ color: "#c8e8c8" }}>{active.format}</p>
+          <p className="font-vt323 text-lg mt-1" style={{ color: "#aaccaa" }}>{active.goal}</p>
         </div>
 
         {/* Hooks */}
-        <PixelCard green className="p-4">
-          <p className="font-pixel text-[9px] mb-3" style={{ color: G1 }}>► ХУКИ</p>
+        <PixelCard className="p-4">
+          <p className="font-pixel text-[9px] mb-3" style={{ color: INK }}>► ХУКИ</p>
           <div className="space-y-2">
             {active.hooks.map((h, i) => (
-              <div key={i} className="flex items-start gap-3 p-3" style={{ background: G7, border: `2px solid ${G5}` }}>
+              <div key={i} className="flex items-start gap-3 p-3" style={{ background: G6, border: `2px solid #d4d4d0` }}>
                 <span className="font-pixel text-[9px] flex-shrink-0" style={{ color: G2 }}>{i + 1}.</span>
                 <p className="font-vt323 text-xl leading-tight" style={{ color: INK }}>"{h}"</p>
               </div>
@@ -586,8 +586,8 @@ function PortfolioTab({ missions, onXpGain }: { missions: Mission[]; onXpGain: (
       </div>
 
       {showForm && (
-        <PixelCard green className="p-4 animate-fade-in">
-          <p className="font-pixel text-[9px] mb-4" style={{ color: G1 }}>► НОВАЯ ПУБЛИКАЦИЯ</p>
+        <PixelCard className="p-4 animate-fade-in">
+          <p className="font-pixel text-[9px] mb-4" style={{ color: INK }}>► НОВАЯ ПУБЛИКАЦИЯ</p>
           <form onSubmit={submit} className="space-y-3">
             <div>
               <p className="font-pixel text-[7px] mb-1" style={{ color: MUTED }}>ССЫЛКА НА ПОСТ</p>
@@ -644,9 +644,9 @@ function PortfolioTab({ missions, onXpGain }: { missions: Mission[]; onXpGain: (
 
           {myPosts.length > 0 && (
             <div className="space-y-3">
-              <p className="font-pixel text-[8px]" style={{ color: G1 }}>► МОИ ПУБЛИКАЦИИ</p>
+              <p className="font-pixel text-[8px]" style={{ color: INK }}>► МОИ ПУБЛИКАЦИИ</p>
               {myPosts.map((p, i) => (
-                <PixelCard key={p.id} green className={`p-4 animate-fade-in stagger-${i + 1}`}>
+                <PixelCard key={p.id} className={`p-4 animate-fade-in stagger-${i + 1}`}>
                   <div className="flex items-start gap-3">
                     <div className="w-10 h-10 flex items-center justify-center flex-shrink-0"
                       style={{ background: G2, border: `2px solid ${G0}` }}>
@@ -672,13 +672,13 @@ function PortfolioTab({ missions, onXpGain }: { missions: Mission[]; onXpGain: (
 
           {allPosts.length > 0 && (
             <div className="space-y-3">
-              <p className="font-pixel text-[8px]" style={{ color: G1 }}>► ДРУГИЕ УЧАСТНИКИ</p>
+              <p className="font-pixel text-[8px]" style={{ color: INK }}>► ДРУГИЕ УЧАСТНИКИ</p>
               {allPosts.map((p, i) => (
                 <PixelCard key={p.id} className={`p-4 animate-fade-in stagger-${i + 1}`}>
                   <div className="flex items-start gap-3">
                     <div className="w-9 h-9 flex items-center justify-center flex-shrink-0"
-                      style={{ background: G6, border: `2px solid ${G3}` }}>
-                      <UserCircleIcon className="w-6 h-6" style={{ color: G2 }} />
+                      style={{ background: G6, border: `2px solid #d4d4d0` }}>
+                      <UserCircleIcon className="w-6 h-6" style={{ color: MUTED }} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
@@ -716,7 +716,7 @@ function ProfileTab({ user, onLogout }: { user: User; onLogout: () => void }) {
   return (
     <div className="space-y-5">
       {/* Hero card */}
-      <PixelCard green className="p-5 animate-fade-in">
+      <PixelCard className="p-5 animate-fade-in">
         <div className="flex items-start gap-4">
           <div className="w-16 h-16 flex items-center justify-center flex-shrink-0"
             style={{ background: G2, border: `3px solid ${G0}`, boxShadow: `4px 4px 0 ${G0}` }}>
@@ -747,7 +747,7 @@ function ProfileTab({ user, onLogout }: { user: User; onLogout: () => void }) {
           { value: p ? String(p.missions_done) : "?", label: "МИССИЙ",    Icon: RocketLaunchIcon },
           { value: p ? String(p.posts_count) : "?",   label: "ПОСТОВ",    Icon: FolderOpenIcon },
         ].map((s, i) => (
-          <PixelCard key={i} green className="p-3 text-center">
+          <PixelCard key={i} className="p-3 text-center">
             <s.Icon className="w-6 h-6 mx-auto mb-1" style={{ color: G2 }} />
             <p className="font-pixel text-sm" style={{ color: INK }}>{s.value}</p>
             <p className="font-pixel text-[7px] mt-1" style={{ color: MUTED }}>{s.label}</p>
@@ -757,7 +757,7 @@ function ProfileTab({ user, onLogout }: { user: User; onLogout: () => void }) {
 
       {/* Settings */}
       <div className="space-y-2 animate-fade-in stagger-2">
-        <p className="font-pixel text-[8px] mb-3" style={{ color: G1 }}>► НАСТРОЙКИ</p>
+        <p className="font-pixel text-[8px] mb-3" style={{ color: INK }}>► НАСТРОЙКИ</p>
         {[
           { label: "РЕДАКТИРОВАТЬ ПРОФИЛЬ", Icon: PencilIcon },
           { label: "ПАРТНЁРСКИЕ ССЫЛКИ",   Icon: LinkIcon },
@@ -766,7 +766,7 @@ function ProfileTab({ user, onLogout }: { user: User; onLogout: () => void }) {
         ].map((item, i) => (
           <PixelCard key={i}>
             <button className="w-full px-4 py-3 flex items-center gap-3 text-left hover-pixel">
-              <item.Icon className="w-4 h-4 flex-shrink-0" style={{ color: G2 }} />
+              <item.Icon className="w-4 h-4 flex-shrink-0" style={{ color: MUTED }} />
               <span className="font-pixel text-[8px] flex-1" style={{ color: INK }}>{item.label}</span>
               <ChevronRightIcon className="w-4 h-4" style={{ color: MUTED }} />
             </button>

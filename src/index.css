@@ -5,50 +5,50 @@
 @layer base {
   :root {
     --background: 0 0% 97%;
-    --foreground: 120 20% 8%;
+    --foreground: 0 0% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 120 20% 8%;
+    --card-foreground: 0 0% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 120 20% 8%;
+    --popover-foreground: 0 0% 10%;
 
-    --primary: 138 72% 28%;
+    --primary: 138 65% 30%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 138 30% 90%;
-    --secondary-foreground: 138 60% 15%;
+    --secondary: 0 0% 92%;
+    --secondary-foreground: 0 0% 20%;
 
-    --muted: 138 15% 93%;
-    --muted-foreground: 120 8% 46%;
+    --muted: 0 0% 94%;
+    --muted-foreground: 0 0% 46%;
 
-    --accent: 138 50% 88%;
-    --accent-foreground: 138 72% 18%;
+    --accent: 138 40% 90%;
+    --accent-foreground: 138 65% 20%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 138 20% 84%;
-    --input: 138 15% 91%;
-    --ring: 138 72% 28%;
+    --border: 0 0% 82%;
+    --input: 0 0% 91%;
+    --ring: 138 65% 30%;
 
-    --radius: 0rem; /* 16-bit = no border radius */
+    --radius: 0rem;
 
-    /* 16-bit green palette */
-    --g0: #0a2e0a; /* darkest — shadow */
-    --g1: #1a5c1a; /* dark green */
-    --g2: #2e8c2e; /* main green */
-    --g3: #3daa3d; /* mid green */
-    --g4: #58cc58; /* bright */
-    --g5: #a8e8a8; /* light */
-    --g6: #d4f4d4; /* very light */
-    --g7: #f0fff0; /* almost white green */
+    /* Нейтральная база + зелёный только как акцент */
+    --g0: #1c1c1c; /* тень — нейтральный почти-чёрный */
+    --g1: #333333; /* тёмный бордер/текст */
+    --g2: #2a8c2a; /* ЗЕЛЁНЫЙ АКЦЕНТ — кнопки, активные */
+    --g3: #36aa36; /* зелёный hover */
+    --g4: #52c852; /* зелёный индикатор */
+    --g5: #c8e8c8; /* очень бледный зелёный — бейджи */
+    --g6: #f0f0ee; /* нейтральный светлый */
+    --g7: #f9f9f7; /* почти белый фон карточек */
 
-    --ink: #0f1f0f;
-    --paper: #f4faf4;
-    --muted-txt: #4a7a4a;
-    --border-clr: #c2dcc2;
-    --shadow-clr: #1a5c1a;
+    --ink: #1c1c1c;
+    --paper: #f7f7f5;
+    --muted-txt: #777770;
+    --border-clr: #d4d4d0;
+    --shadow-clr: #1c1c1c;
   }
 }
 
@@ -77,21 +77,29 @@
     font-family: "Rubik", sans-serif;
   }
 
-  /* ── 16-BIT CARD: hard pixel shadow, no radius ── */
+  /* ── CARDS: нейтральные тени, не зелёные ── */
   .card-pixel {
     background: #fff;
     border: 3px solid var(--g1);
     box-shadow: 4px 4px 0 var(--g0);
     border-radius: 0;
   }
+  /* зелёная карточка — только для активного/выполненного */
   .card-pixel-green {
-    background: var(--g7);
+    background: #f4fbf4;
     border: 3px solid var(--g2);
-    box-shadow: 4px 4px 0 var(--g1);
+    box-shadow: 4px 4px 0 var(--g0);
+    border-radius: 0;
+  }
+  /* нейтральная мягкая карточка */
+  .card-pixel-soft {
+    background: var(--g7);
+    border: 2px solid var(--border-clr);
+    box-shadow: 3px 3px 0 var(--border-clr);
     border-radius: 0;
   }
 
-  /* ── 16-BIT BUTTON ── */
+  /* ── BUTTONS ── */
   .btn-pixel {
     display: inline-flex;
     align-items: center;
@@ -120,6 +128,7 @@
   .btn-pixel-outline {
     background: #fff;
     color: var(--g1);
+    border-color: var(--g1);
     box-shadow: 4px 4px 0 var(--g0);
   }
   .btn-pixel-outline:active {
@@ -127,13 +136,13 @@
     transform: translate(3px, 3px);
   }
   .btn-pixel-ghost {
-    background: var(--g7);
+    background: var(--g6);
     color: var(--g1);
-    border-color: var(--g3);
-    box-shadow: 4px 4px 0 var(--g2);
+    border-color: var(--border-clr);
+    box-shadow: 4px 4px 0 #aaaaaa;
   }
   .btn-pixel-ghost:active {
-    box-shadow: 1px 1px 0 var(--g2);
+    box-shadow: 1px 1px 0 #aaaaaa;
     transform: translate(3px, 3px);
   }
   .btn-pixel-danger {
@@ -147,29 +156,37 @@
     transform: translate(3px, 3px);
   }
 
-  /* ── BADGE ── */
+  /* ── BADGES — нейтральные по умолчанию ── */
   .badge-pixel {
     display: inline-flex;
     align-items: center;
     gap: 4px;
     padding: 2px 8px;
-    border: 2px solid var(--g1);
+    border: 2px solid var(--border-clr);
     background: var(--g6);
-    color: var(--g0);
+    color: var(--g1);
     font-family: "Press Start 2P", monospace;
     font-size: 8px;
     text-transform: uppercase;
     border-radius: 0;
-    box-shadow: 2px 2px 0 var(--g1);
+    box-shadow: 2px 2px 0 var(--border-clr);
   }
+  /* тёмный бейдж (для XP, уровней) */
   .badge-pixel-dark {
     background: var(--g1);
-    color: var(--g5);
+    color: #f0f0ee;
     border-color: var(--g0);
     box-shadow: 2px 2px 0 var(--g0);
   }
+  /* зелёный бейдж — только для статусов "выполнено" */
+  .badge-pixel-green {
+    background: #e8f5e8;
+    color: var(--g2);
+    border-color: var(--g2);
+    box-shadow: 2px 2px 0 var(--g2);
+  }
 
-  /* ── INPUT ── */
+  /* ── INPUTS ── */
   .input-pixel {
     border: 3px solid var(--g1);
     border-radius: 0;
@@ -183,17 +200,17 @@
     width: 100%;
   }
   .input-pixel:focus {
-    border-color: var(--g3);
+    border-color: var(--g2);
     box-shadow:
       inset 2px 2px 0 var(--g6),
       0 0 0 2px var(--g5);
   }
 
-  /* ── PROGRESS BAR (pixelated) ── */
+  /* ── PROGRESS BAR ── */
   .progress-pixel {
     height: 16px;
     border: 3px solid var(--g1);
-    background: var(--g7);
+    background: var(--g6);
     position: relative;
     overflow: hidden;
     box-shadow: 2px 2px 0 var(--g0);
@@ -202,30 +219,30 @@
     height: 100%;
     background: repeating-linear-gradient(
       90deg,
-      var(--g3) 0px,
+      var(--g2) 0px,
+      var(--g2) 8px,
       var(--g3) 8px,
-      var(--g4) 8px,
-      var(--g4) 16px
+      var(--g3) 16px
     );
     transition: width 0.4s steps(10);
   }
 
-  /* ── NAV BAR ── */
+  /* ── NAV: тёмная, нейтральная ── */
   .nav-pixel {
     background: var(--g1);
     border-top: 3px solid var(--g0);
   }
   .nav-pixel-item {
-    color: var(--g5);
+    color: #aaaaaa;
     font-family: "Press Start 2P", monospace;
     font-size: 7px;
   }
   .nav-pixel-item.active {
-    color: #fff;
-    background: var(--g2);
+    color: #ffffff;
+    background: #2a2a2a;
   }
 
-  /* ── HEADER ── */
+  /* ── HEADER: тёмная нейтральная ── */
   .header-pixel {
     background: var(--g1);
     border-bottom: 3px solid var(--g0);
@@ -236,14 +253,24 @@
     height: 3px;
     background: repeating-linear-gradient(
       90deg,
-      var(--g3) 0px,
-      var(--g3) 4px,
+      var(--border-clr) 0px,
+      var(--border-clr) 4px,
+      transparent 4px,
+      transparent 8px
+    );
+  }
+  .divider-pixel-green {
+    height: 3px;
+    background: repeating-linear-gradient(
+      90deg,
+      var(--g2) 0px,
+      var(--g2) 4px,
       transparent 4px,
       transparent 8px
     );
   }
 
-  /* ── CHECK BOX PIXEL ── */
+  /* ── CHECK BOX ── */
   .check-pixel {
     width: 20px;
     height: 20px;
@@ -253,19 +280,19 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    box-shadow: 2px 2px 0 var(--g0);
+    box-shadow: 2px 2px 0 var(--border-clr);
   }
   .check-pixel.checked {
     background: var(--g2);
     border-color: var(--g0);
   }
 
-  /* ── GRID BG ── */
+  /* ── GRID BG: нейтральная клетка ── */
   .grid-bg {
     background-color: var(--paper);
     background-image:
-      linear-gradient(rgba(46, 140, 46, 0.08) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(46, 140, 46, 0.08) 1px, transparent 1px);
+      linear-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
     background-size: 16px 16px;
   }
 
@@ -278,9 +305,6 @@
   }
   .animate-blink {
     animation: blink 1s steps(1) infinite;
-  }
-  .animate-march {
-    animation: march 0.8s steps(4) infinite;
   }
 
   .stagger-1 {
@@ -302,7 +326,6 @@
     animation-delay: 0.3s;
   }
 
-  /* ── HOVER (pixel jump) ── */
   .hover-pixel {
     transition: none;
   }
@@ -339,23 +362,6 @@
   }
   50% {
     opacity: 0;
-  }
-}
-@keyframes march {
-  0% {
-    transform: translateX(0);
-  }
-  25% {
-    transform: translateX(2px) translateY(-1px);
-  }
-  50% {
-    transform: translateX(0);
-  }
-  75% {
-    transform: translateX(-2px) translateY(-1px);
-  }
-  100% {
-    transform: translateX(0);
   }
 }
 @keyframes accordion-down {
