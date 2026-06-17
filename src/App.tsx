@@ -147,6 +147,277 @@ const NAV: { id: Tab; label: string; Icon: React.FC<React.SVGProps<SVGSVGElement
 const PLATFORMS = ["instagram", "tiktok", "telegram", "youtube"];
 const FORMATS   = ["reel", "story", "post", "short", "carousel"];
 
+// ─── Landing Screen ───────────────────────────────────────────────────────────
+function LandingScreen({ onAuth }: { onAuth: (u: User) => void }) {
+  const [showAuth, setShowAuth] = useState(false);
+  const [visible, setVisible]   = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const els = document.querySelectorAll("[data-reveal]");
+    const obs = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) setVisible(v => new Set([...v, (e.target as HTMLElement).dataset.reveal!]));
+      });
+    }, { threshold: 0.15 });
+    els.forEach(el => obs.observe(el));
+    return () => obs.disconnect();
+  }, []);
+
+  const reveal = (id: string, delay = 0) => ({
+    "data-reveal": id,
+    style: {
+      opacity: visible.has(id) ? 1 : 0,
+      transform: visible.has(id) ? "translateY(0)" : "translateY(24px)",
+      transition: `opacity 0.4s steps(6) ${delay}ms, transform 0.4s steps(6) ${delay}ms`,
+    } as React.CSSProperties,
+  });
+
+  if (showAuth) return <AuthScreen onAuth={onAuth} />;
+
+  const STEPS = [
+    { day: "ДЕНЬ 0",   title: "РЕГИСТРАЦИЯ",          desc: "Создай аккаунт, пройди onboarding, получи первую миссию" },
+    { day: "ДЕНЬ 1-7", title: "ПОДГОТОВКА",            desc: "Настрой аккаунт, свет, звук. Сними первое тестовое видео" },
+    { day: "ДЕНЬ 8-21",title: "ПУБЛИКАЦИИ",            desc: "10-15 качественных постов по шаблонам и заданиям" },
+    { day: "ДЕНЬ 22-30",title:"МОНЕТИЗАЦИЯ",           desc: "Первый партнёрский пост, портфолио, выбор следующей миссии" },
+  ];
+
+  const FEATURES = [
+    { icon: MapIcon,          title: "LEARNING PATH",   desc: "Урок → чеклист → задание → следующий шаг. Не 40 минут теории, а 5-10 минут + действие." },
+    { icon: RocketLaunchIcon, title: "MISSION SYSTEM",  desc: "Не думай о чём снимать. Получи миссию: тема + продукт + формат + шаблоны + хуки." },
+    { icon: FolderOpenIcon,   title: "ПОРТФОЛИО",       desc: "Через 30 дней не сертификат, а живое портфолио: 10-15 публикаций и первые попытки монетизации." },
+    { icon: LinkIcon,         title: "PARTNER LINKS",   desc: "Партнёрская ссылка + шаблон честной рекомендации. Открывается после базовых уроков." },
+  ];
+
+  const STATS = [
+    { num: "30",  unit: "ДНЕЙ", label: "до первой монетизации" },
+    { num: "15",  unit: "ПОСТОВ", label: "реальных публикаций" },
+    { num: "4",   unit: "МИССИИ", label: "с хуками и шаблонами" },
+    { num: "100%", unit: "ЧЕСТНО", label: "без обещаний стать звездой" },
+  ];
+
+  const MISSIONS_PREVIEW = [
+    { title: "МОЙ ПЕРВЫЙ AI-КОНТЕНТ", product: "Korobka AI", xp: 500, format: "3 Reels + 2 Stories" },
+    { title: "ЗАПУСК БЛОГА С НУЛЯ",   product: null,         xp: 400, format: "5 постов за 7 дней" },
+    { title: "ТРАНСФОРМАЦИЯ ДО/ПОСЛЕ",product: null,         xp: 350, format: "Карусель + Reel" },
+    { title: "ПЕРВЫЙ ПАРТНЁРСКИЙ ПОСТ",product: "Партнёр",   xp: 600, format: "Честный обзор" },
+  ];
+
+  return (
+    <div className="min-h-screen" style={{ background: PAPER, fontFamily: "'VT323', monospace" }}>
+
+      {/* ── NAV ── */}
+      <nav className="sticky top-0 z-50 header-pixel">
+        <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-7 h-7 flex items-center justify-center" style={{ background: G2, border: `2px solid ${G0}` }}>
+              <RocketLaunchIcon className="w-4 h-4 text-white" />
+            </div>
+            <span className="font-pixel text-[11px] text-white tracking-wider">YOUGEN</span>
+          </div>
+          <PixelBtn onClick={() => setShowAuth(true)} size="sm">
+            ► ВОЙТИ
+          </PixelBtn>
+        </div>
+      </nav>
+
+      {/* ── HERO ── */}
+      <section className="max-w-5xl mx-auto px-6 pt-16 pb-20 text-center">
+        {/* Scanline декор */}
+        <div className="inline-block mb-6 px-4 py-1 font-pixel text-[8px]"
+          style={{ background: G2, color: "#fff", border: `2px solid ${G0}`, boxShadow: `3px 3px 0 ${G0}` }}
+          {...reveal("hero-badge")}>
+          SEASON 01 — ОТКРЫТ НАБОР
+        </div>
+
+        <h1 className="font-pixel leading-loose mb-6"
+          style={{ fontSize: "clamp(18px, 5vw, 36px)", color: INK, lineHeight: 1.6 }}
+          {...reveal("hero-title", 100)}>
+          ТЫ НЕ ПРОХОДИШЬ КУРС.<br />
+          <span style={{ color: G2 }}>ТЫ ПОЛУЧАЕШЬ МИССИЮ</span><br />
+          И ВЫПОЛНЯЕШЬ ЕЁ ПУБЛИЧНО.
+        </h1>
+
+        <p className="font-vt323 text-2xl max-w-2xl mx-auto mb-10" style={{ color: MUTED, lineHeight: 1.5 }}
+          {...reveal("hero-sub", 200)}>
+          За 30 дней — настроенный блог, 10-15 публикаций,
+          понятный контент-процесс и первые попытки монетизации.
+          Честно. Без обещаний стать популярным.
+        </p>
+
+        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center" {...reveal("hero-cta", 300)}>
+          <PixelBtn onClick={() => setShowAuth(true)} size="lg" className="text-lg px-8 py-4">
+            ► ПОЛУЧИТЬ ПЕРВУЮ МИССИЮ
+          </PixelBtn>
+          <a href="#how" className="font-pixel text-[9px]" style={{ color: MUTED }}>
+            КАК ЭТО РАБОТАЕТ ↓
+          </a>
+        </div>
+
+        {/* Pixel character animation */}
+        <div className="mt-14 flex justify-center gap-8 flex-wrap" {...reveal("hero-chars", 400)}>
+          {["НОВИЧОК", "БЛОГЕР", "МОНЕТИЗАЦИЯ"].map((stage, i) => (
+            <div key={i} className="text-center">
+              <div className="w-16 h-16 mx-auto mb-2 flex items-center justify-center font-pixel text-[8px] text-white"
+                style={{
+                  background: i === 2 ? G2 : i === 1 ? G1 : "#555",
+                  border: `3px solid ${G0}`,
+                  boxShadow: `4px 4px 0 ${G0}`,
+                  animation: `march ${1 + i * 0.3}s steps(4) infinite`,
+                  animationDelay: `${i * 200}ms`,
+                }}>
+                {i === 0 ? "?" : i === 1 ? "▶" : "★"}
+              </div>
+              <p className="font-pixel text-[7px]" style={{ color: i === 2 ? G2 : MUTED }}>{stage}</p>
+            </div>
+          ))}
+          <div className="self-center font-pixel text-[14px]" style={{ color: G2 }}>→→→</div>
+        </div>
+      </section>
+
+      {/* ── STATS ── */}
+      <section style={{ background: G1, borderTop: `4px solid ${G0}`, borderBottom: `4px solid ${G0}` }}>
+        <div className="max-w-5xl mx-auto px-6 py-8 grid grid-cols-2 md:grid-cols-4 gap-6">
+          {STATS.map((s, i) => (
+            <div key={i} className="text-center" {...reveal(`stat-${i}`, i * 80)}>
+              <p className="font-pixel text-2xl md:text-3xl" style={{ color: G4 }}>{s.num}</p>
+              <p className="font-pixel text-[9px] mt-1" style={{ color: "#fff" }}>{s.unit}</p>
+              <p className="font-vt323 text-lg mt-1" style={{ color: G5 }}>{s.label}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── HOW IT WORKS ── */}
+      <section id="how" className="max-w-5xl mx-auto px-6 py-20">
+        <div className="text-center mb-12" {...reveal("how-title")}>
+          <p className="font-pixel text-[9px] mb-2" style={{ color: G2 }}>КАК ЭТО РАБОТАЕТ</p>
+          <h2 className="font-pixel text-lg md:text-xl" style={{ color: INK, lineHeight: 1.8 }}>
+            30 ДНЕЙ. 4 ЭТАПА. ОДИН РЕЗУЛЬТАТ.
+          </h2>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {STEPS.map((step, i) => (
+            <div key={i} className="p-5" {...reveal(`step-${i}`, i * 100)}
+              style={{
+                background: "#fff",
+                border: `3px solid ${G0}`,
+                boxShadow: `5px 5px 0 ${G0}`,
+                borderLeft: `6px solid ${i === 3 ? G2 : G1}`,
+              }}>
+              <div className="font-pixel text-[8px] mb-2 px-2 py-1 inline-block text-white"
+                style={{ background: i === 3 ? G2 : G1, border: `2px solid ${G0}` }}>
+                {step.day}
+              </div>
+              <h3 className="font-pixel text-[10px] mb-2 mt-3" style={{ color: INK }}>{step.title}</h3>
+              <p className="font-vt323 text-xl" style={{ color: MUTED, lineHeight: 1.4 }}>{step.desc}</p>
+              {i < 3 && (
+                <div className="mt-3 font-pixel text-[18px]" style={{ color: G4 }}>↓</div>
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── FEATURES ── */}
+      <section style={{ background: G6, borderTop: `3px solid #d4d4d0`, borderBottom: `3px solid #d4d4d0` }}>
+        <div className="max-w-5xl mx-auto px-6 py-20">
+          <div className="text-center mb-12" {...reveal("feat-title")}>
+            <p className="font-pixel text-[9px] mb-2" style={{ color: G2 }}>MVP ФУНКЦИИ</p>
+            <h2 className="font-pixel text-lg" style={{ color: INK, lineHeight: 1.8 }}>4 ВЕЩИ, КОТОРЫЕ МЕНЯЮТ ВСЁ</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {FEATURES.map((f, i) => (
+              <div key={i} className="p-5 bg-white" {...reveal(`feat-${i}`, i * 80)}
+                style={{ border: `3px solid ${G1}`, boxShadow: `4px 4px 0 ${G0}` }}>
+                <div className="w-12 h-12 flex items-center justify-center mb-4"
+                  style={{ background: i % 2 === 0 ? G2 : G1, border: `3px solid ${G0}`, boxShadow: `3px 3px 0 ${G0}` }}>
+                  <f.icon className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="font-pixel text-[10px] mb-3" style={{ color: INK }}>{f.title}</h3>
+                <p className="font-vt323 text-xl" style={{ color: MUTED, lineHeight: 1.5 }}>{f.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── MISSIONS PREVIEW ── */}
+      <section className="max-w-5xl mx-auto px-6 py-20">
+        <div className="text-center mb-12" {...reveal("miss-title")}>
+          <p className="font-pixel text-[9px] mb-2" style={{ color: G2 }}>ПРИМЕРЫ МИССИЙ</p>
+          <h2 className="font-pixel text-lg" style={{ color: INK, lineHeight: 1.8 }}>ЧТО ТЫ БУДЕШЬ ДЕЛАТЬ</h2>
+        </div>
+        <div className="space-y-3">
+          {MISSIONS_PREVIEW.map((m, i) => (
+            <div key={i} className="p-4 flex items-center gap-4 bg-white" {...reveal(`miss-${i}`, i * 60)}
+              style={{ border: `3px solid ${G1}`, boxShadow: `4px 4px 0 ${G0}` }}>
+              <div className="w-10 h-10 flex items-center justify-center flex-shrink-0 font-pixel text-[10px] text-white"
+                style={{ background: G1, border: `2px solid ${G0}` }}>
+                {i + 1}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-pixel text-[9px]" style={{ color: INK }}>{m.title}</p>
+                <p className="font-vt323 text-lg mt-1" style={{ color: MUTED }}>{m.format}</p>
+              </div>
+              <div className="flex items-center gap-3 flex-shrink-0">
+                {m.product && (
+                  <span className="font-pixel text-[7px] px-2 py-1"
+                    style={{ background: G6, color: G1, border: `2px solid #d4d4d0` }}>
+                    {m.product}
+                  </span>
+                )}
+                <span className="font-pixel text-[9px]" style={{ color: G2 }}>+{m.xp} XP</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── CTA ── */}
+      <section style={{ background: G1, borderTop: `4px solid ${G0}` }}>
+        <div className="max-w-5xl mx-auto px-6 py-20 text-center">
+          <div {...reveal("cta-title")}>
+            <p className="font-pixel text-[8px] mb-4" style={{ color: G4 }}>► SEASON 01 ОТКРЫТ</p>
+            <h2 className="font-pixel mb-4" style={{ fontSize: "clamp(14px, 3vw, 24px)", color: "#fff", lineHeight: 1.8 }}>
+              ЧЕРЕЗ 30 ДНЕЙ У ТЕБЯ БУДЕТ<br />
+              <span style={{ color: G4 }}>РЕАЛЬНОЕ ПОРТФОЛИО.</span><br />
+              НЕ СЕРТИФИКАТ.
+            </h2>
+            <p className="font-vt323 text-2xl mb-10 max-w-xl mx-auto" style={{ color: G5 }}>
+              Настроенный блог, 10-15 публикаций, понятный процесс
+              и первые попытки честной монетизации.
+            </p>
+          </div>
+          <div {...reveal("cta-btn", 200)}>
+            <PixelBtn onClick={() => setShowAuth(true)} size="lg" className="text-base px-10 py-5">
+              ► НАЧАТЬ СЕЙЧАС — БЕСПЛАТНО
+            </PixelBtn>
+            <p className="font-pixel text-[7px] mt-6 animate-blink" style={{ color: G5 }}>
+              PRESS START TO CONTINUE
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ── FOOTER ── */}
+      <footer style={{ background: G0, borderTop: `3px solid ${G0}` }}>
+        <div className="max-w-5xl mx-auto px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 flex items-center justify-center" style={{ background: G2, border: `1px solid ${G1}` }}>
+              <RocketLaunchIcon className="w-3 h-3 text-white" />
+            </div>
+            <span className="font-pixel text-[9px]" style={{ color: "#888" }}>YOUGEN © 2025</span>
+          </div>
+          <p className="font-vt323 text-lg" style={{ color: "#666" }}>
+            Ты не проходишь курс. Ты получаешь миссию.
+          </p>
+        </div>
+      </footer>
+    </div>
+  );
+}
+
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 function AuthScreen({ onAuth }: { onAuth: (u: User) => void }) {
   const [mode, setMode] = useState<"login" | "register">("login");
@@ -830,7 +1101,7 @@ export default function App() {
     );
   }
 
-  if (!user) return <AuthScreen onAuth={handleAuth} />;
+  if (!user) return <LandingScreen onAuth={handleAuth} />;
 
   const activeMissions = missions.filter(m => m.status === "active").length;
 
