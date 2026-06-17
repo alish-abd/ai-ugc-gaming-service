@@ -246,7 +246,7 @@ function LandingScreen({ onAuth }: { onAuth: (u: User) => void }) {
                 НАУЧИСЬ СНИМАТЬ РИЛСЫ <span style={{ color: G2 }}>ПРО AI-СЕРВИСЫ</span> И СРАЗУ ЗАРАБАТЫВАЙ НА РЕКЛАМЕ.
               </h1>
 
-              <p className="font-vt323 text-xl mb-8" style={{ color: MUTED, lineHeight: 1.5, maxWidth: 380 }}>
+              <p className="font-vt323 text-xl mb-8" style={{ color: MUTED, lineHeight: 1.5 }}>
                 Снимаешь видео про AI-сервисы, выполняешь задания
                 и получаешь первый рекламный оффер.
               </p>
