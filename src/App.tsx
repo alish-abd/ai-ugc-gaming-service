@@ -233,7 +233,7 @@ function LandingScreen({ onAuth }: { onAuth: (u: User) => void }) {
         <div className="max-w-6xl mx-auto px-6 pt-10 pb-0 flex flex-col">
 
           {/* Основная строка: текст + сцена */}
-          <div style={{ display: "grid", gridTemplateColumns: "42% 58%", alignItems: "end" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "50% 50%", alignItems: "end" }}>
 
             {/* ── LEFT: текст ── */}
             <div className="pb-10 pt-4 pr-6" {...reveal("hero-left")}>
@@ -243,9 +243,7 @@ function LandingScreen({ onAuth }: { onAuth: (u: User) => void }) {
               </div>
 
               <h1 className="font-pixel mb-5" style={{ fontSize: "clamp(18px, 2.4vw, 28px)", color: INK, lineHeight: 1.9 }}>
-                НАУЧИСЬ СНИМАТЬ РИЛСЫ<br />
-                <span style={{ color: G2 }}>ПРО AI-СЕРВИСЫ</span><br />
-                И СРАЗУ ЗАРАБАТЫВАЙ НА РЕКЛАМЕ.
+                НАУЧИСЬ СНИМАТЬ РИЛСЫ <span style={{ color: G2 }}>ПРО AI-СЕРВИСЫ</span> И СРАЗУ ЗАРАБАТЫВАЙ НА РЕКЛАМЕ.
               </h1>
 
               <p className="font-vt323 text-xl mb-8" style={{ color: MUTED, lineHeight: 1.5, maxWidth: 380 }}>
