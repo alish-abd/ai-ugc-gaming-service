@@ -242,7 +242,7 @@ function LandingScreen({ onAuth }: { onAuth: (u: User) => void }) {
                 <span style={{ color: G2 }}>+</span> SEASON 01 — ОТКРЫТ НАБОР <span style={{ color: G2 }}>+</span>
               </div>
 
-              <h1 className="font-pixel mb-5" style={{ fontSize: "clamp(18px, 2.4vw, 28px)", color: INK, lineHeight: 1.9 }}>
+              <h1 className="font-pixel mb-5 text-2xl" style={{ fontSize: "clamp(18px, 2.4vw, 28px)", color: INK, lineHeight: 1.9 }}>
                 НАУЧИСЬ СНИМАТЬ РИЛСЫ <span style={{ color: G2 }}>ПРО AI-СЕРВИСЫ</span> И СРАЗУ ЗАРАБАТЫВАЙ НА РЕКЛАМЕ.
               </h1>
 
