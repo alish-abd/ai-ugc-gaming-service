@@ -1,0 +1,31 @@
+{
+  "tests": [
+    {
+      "name": "Login requires fields",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "login", "login": "", "password": ""},
+      "expectedStatus": 400,
+      "expectedBody": {"error": "string"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Dashboard denied without token",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "dashboard"},
+      "expectedStatus": 403,
+      "expectedBody": {"error": "string"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Seed admin blocked when exists",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "seed_admin", "password": "test123456"},
+      "expectedStatus": 403,
+      "expectedBody": {"error": "string"},
+      "bodyMatcher": "partial"
+    }
+  ]
+}
