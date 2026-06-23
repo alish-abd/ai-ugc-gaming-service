@@ -2,6 +2,8 @@
 import json
 import os
 import hashlib
+import hmac
+import time
 import secrets
 import psycopg2
 
@@ -54,6 +56,8 @@ def handler(event: dict, context) -> dict:
         return register(body)
     if action == 'login':
         return login(body)
+    if action == 'telegram':
+        return telegram_login(body)
     if action == 'logout':
         return logout(token)
 
@@ -127,6 +131,77 @@ def login(body: dict) -> dict:
     conn.close()
 
     return ok({'token': token, 'user': {'id': user_id, 'username': username, 'email': email, 'avatar': avatar, 'xp': xp, 'level': level, 'streak': streak}})
+
+
+def verify_telegram(data: dict, bot_token: str) -> bool:
+    received_hash = data.get('hash', '')
+    if not received_hash:
+        return False
+    pairs = []
+    for k in sorted(data.keys()):
+        if k == 'hash':
+            continue
+        pairs.append(f"{k}={data[k]}")
+    check_string = '\n'.join(pairs)
+    secret_key = hashlib.sha256(bot_token.encode()).digest()
+    calc_hash = hmac.new(secret_key, check_string.encode(), hashlib.sha256).hexdigest()
+    return hmac.compare_digest(calc_hash, received_hash)
+
+
+def telegram_login(body: dict) -> dict:
+    bot_token = os.environ.get('TELEGRAM_BOT_TOKEN', '')
+    if not bot_token:
+        return err('Telegram-вход не настроен', 500)
+
+    tg = body.get('telegram') or {}
+    tg = {k: str(v) for k, v in tg.items() if v is not None}
+
+    if not verify_telegram(tg, bot_token):
+        return err('Не удалось подтвердить вход через Telegram', 403)
+
+    auth_date = int(tg.get('auth_date', '0') or 0)
+    if auth_date and (time.time() - auth_date) > 86400:
+        return err('Данные Telegram устарели, попробуйте снова', 403)
+
+    tg_id = int(tg.get('id'))
+    first = tg.get('first_name', '')
+    last = tg.get('last_name', '')
+    tg_username = tg.get('username', '')
+    photo = tg.get('photo_url', '')
+
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute(
+        f"SELECT id, username, email, avatar, xp, level, streak FROM {SCHEMA}.users WHERE telegram_id = %s",
+        (tg_id,)
+    )
+    row = cur.fetchone()
+
+    if not row:
+        base = tg_username or (first + last) or f"tg{tg_id}"
+        base = ''.join(ch for ch in base if ch.isalnum() or ch == '_')[:40] or f"tg{tg_id}"
+        username = base
+        cur.execute(f"SELECT 1 FROM {SCHEMA}.users WHERE username = %s", (username,))
+        if cur.fetchone():
+            username = f"{base}_{tg_id}"[:50]
+        email = f"tg{tg_id}@telegram.local"
+        avatar = photo if photo else '🚀'
+        pw_hash = hash_password(secrets.token_hex(16))
+        cur.execute(
+            f"""INSERT INTO {SCHEMA}.users (username, email, password_hash, avatar, telegram_id)
+                VALUES (%s, %s, %s, %s, %s)
+                RETURNING id, username, email, avatar, xp, level, streak""",
+            (username, email, pw_hash, avatar, tg_id)
+        )
+        row = cur.fetchone()
+
+    user_id, username, email, avatar, xp, level, streak = row
+    new_token = make_token()
+    cur.execute(f"INSERT INTO {SCHEMA}.sessions (user_id, token) VALUES (%s, %s)", (user_id, new_token))
+    conn.commit()
+    conn.close()
+
+    return ok({'token': new_token, 'user': {'id': user_id, 'username': username, 'email': email, 'avatar': avatar, 'xp': xp, 'level': level, 'streak': streak}})
 
 
 def get_me(token: str) -> dict:

@@ -32,6 +32,7 @@ import { ArrowRightIcon } from "@heroicons/react/24/outline";
 const AUTH_URL  = "https://functions.poehali.dev/16228047-1a09-4827-af8c-d5ca8dd48885";
 const API_URL   = "https://functions.poehali.dev/58712cb3-8e82-4bb3-9940-6fa8d4df92b0";
 const TOKEN_KEY = "mission_token";
+const TELEGRAM_BOT = "yougen_ai_bot";
 
 // ─── 16-bit palette ──────────────────────────────────────────────────────────
 const G0 = "#1c1c1c";   // нейтральная тень
@@ -465,6 +466,7 @@ function AuthScreen({ onAuth }: { onAuth: (u: User) => void }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, [k]: e.target.value }));
+  const tgRef = useRef<HTMLDivElement>(null);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault(); setError(""); setLoading(true);
@@ -477,6 +479,29 @@ function AuthScreen({ onAuth }: { onAuth: (u: User) => void }) {
     localStorage.setItem(TOKEN_KEY, data.token);
     onAuth(data.user);
   };
+
+  useEffect(() => {
+    (window as unknown as { onTelegramAuth: (u: Record<string, unknown>) => void }).onTelegramAuth = async (tgUser) => {
+      setError(""); setLoading(true);
+      const data = await authPost({ action: "telegram", telegram: tgUser } as unknown as Record<string, string>);
+      setLoading(false);
+      if (data.error) { setError(data.error); return; }
+      localStorage.setItem(TOKEN_KEY, data.token);
+      onAuth(data.user);
+    };
+    if (tgRef.current && !tgRef.current.querySelector("script")) {
+      const s = document.createElement("script");
+      s.async = true;
+      s.src = "https://telegram.org/js/telegram-widget.js?22";
+      s.setAttribute("data-telegram-login", TELEGRAM_BOT);
+      s.setAttribute("data-size", "large");
+      s.setAttribute("data-radius", "0");
+      s.setAttribute("data-onauth", "onTelegramAuth(user)");
+      s.setAttribute("data-request-access", "write");
+      tgRef.current.appendChild(s);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="min-h-screen grid-bg flex items-center justify-center px-4">
@@ -538,6 +563,13 @@ function AuthScreen({ onAuth }: { onAuth: (u: User) => void }) {
               {loading ? "ЗАГРУЗКА..." : mode === "login" ? "► ВОЙТИ" : "► СТАРТ"}
             </PixelBtn>
           </form>
+
+          <div className="flex items-center gap-2 my-4">
+            <div className="flex-1" style={{ height: 2, background: G6 }} />
+            <span className="font-pixel text-[8px]" style={{ color: MUTED }}>ИЛИ</span>
+            <div className="flex-1" style={{ height: 2, background: G6 }} />
+          </div>
+          <div ref={tgRef} className="flex justify-center" />
         </PixelCard>
 
         <p className="text-center font-vt323 text-lg mt-4 animate-blink" style={{ color: G3 }}>

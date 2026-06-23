@@ -26,6 +26,15 @@
       "expectedStatus": 400,
       "expectedBody": {"error": "string"},
       "bodyMatcher": "partial"
+    },
+    {
+      "name": "Telegram invalid hash rejected",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "telegram", "telegram": {"id": 123, "first_name": "Test", "auth_date": 1700000000, "hash": "deadbeef"}},
+      "expectedStatus": 403,
+      "expectedBody": {"error": "string"},
+      "bodyMatcher": "partial"
     }
   ]
 }
