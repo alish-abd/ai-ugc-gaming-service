@@ -212,11 +212,11 @@ function LandingScreen({ onAuth }: { onAuth: (u: User) => void }) {
   ];
 
   return (
-    <div className="min-h-screen" style={{ background: PAPER, fontFamily: "'VT323', monospace" }}>
+    <div className="min-h-screen overflow-x-hidden" style={{ background: PAPER, fontFamily: "'VT323', monospace" }}>
 
       {/* ── NAV ── */}
       <nav className="sticky top-0 z-50 header-pixel">
-        <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-7 h-7 flex items-center justify-center" style={{ background: G2, border: `2px solid ${G0}` }}>
               <RocketLaunchIcon className="w-4 h-4 text-white" />
@@ -231,19 +231,19 @@ function LandingScreen({ onAuth }: { onAuth: (u: User) => void }) {
 
       {/* ── HERO ── */}
       <section style={{ background: "#eef2ea" }}>
-        <div className="max-w-6xl mx-auto px-6 pt-10 pb-0 flex flex-col">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 sm:pt-10 pb-0 flex flex-col">
 
           {/* Основная строка: текст + сцена */}
-          <div style={{ display: "grid", gridTemplateColumns: "58% 42%", alignItems: "end" }}>
+          <div className="grid grid-cols-1 md:grid-cols-[58%_42%] items-end">
 
             {/* ── LEFT: текст ── */}
-            <div className="pb-10 pt-4 pr-6" {...reveal("hero-left")}>
+            <div className="pb-6 md:pb-10 pt-4 md:pr-6 order-2 md:order-1" {...reveal("hero-left")}>
               <div className="inline-flex items-center gap-2 mb-5 px-3 py-1.5 font-pixel text-[8px]"
                 style={{ border: `2px solid ${G1}`, color: G1 }}>
                 <span style={{ color: G2 }}>+</span> SEASON 01 — ОТКРЫТ НАБОР <span style={{ color: G2 }}>+</span>
               </div>
 
-              <h1 className="font-pixel mb-5 text-2xl" style={{ fontSize: "clamp(18px, 2.4vw, 28px)", color: INK, lineHeight: 1.9 }}>
+              <h1 className="font-pixel mb-5" style={{ fontSize: "clamp(15px, 5vw, 28px)", color: INK, lineHeight: 1.8 }}>
                 НАУЧИСЬ СНИМАТЬ РИЛСЫ <span style={{ color: G2 }}>ПРО AI-СЕРВИСЫ</span> И СРАЗУ ЗАРАБАТЫВАЙ НА РЕКЛАМЕ.
               </h1>
 
@@ -264,7 +264,7 @@ function LandingScreen({ onAuth }: { onAuth: (u: User) => void }) {
             </div>
 
             {/* ── RIGHT: сцена ── */}
-            <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "center" }} {...reveal("hero-right", 100)}>
+            <div className="flex items-end justify-center order-1 md:order-2" {...reveal("hero-right", 100)}>
               <img
                 src="https://cdn.poehali.dev/projects/5137e801-4ad0-4168-8f01-73f78e2e10e1/bucket/95483b2c-8c66-4d7f-bb76-0508351d9941.png"
                 alt="Hero scene"
@@ -275,17 +275,16 @@ function LandingScreen({ onAuth }: { onAuth: (u: User) => void }) {
 
           {/* ── Progression bar ── */}
           <div style={{ borderTop: `2px solid ${G1}` }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr" }}>
+            <div className="grid grid-cols-1 sm:grid-cols-3">
               {[
                 { label: "НОВИЧОК",     sub: "ТВОЙ СТАРТ",        img: "https://cdn.poehali.dev/projects/5137e801-4ad0-4168-8f01-73f78e2e10e1/bucket/03c291e8-743c-4756-83be-038f5fa139c7.png" },
                 { label: "БЛОГЕР",      sub: "СОЗДАЁШЬ КОНТЕНТ",  img: "https://cdn.poehali.dev/projects/5137e801-4ad0-4168-8f01-73f78e2e10e1/bucket/dfd8400c-3152-4d2b-8183-4cf81d218da6.png" },
                 { label: "МОНЕТИЗАЦИЯ", sub: "ПЕРВЫЕ РЕЗУЛЬТАТЫ", img: "https://cdn.poehali.dev/projects/5137e801-4ad0-4168-8f01-73f78e2e10e1/bucket/244e8ef2-465a-4d07-9730-72d958c3b81f.png" },
               ].map((stage, i) => (
-                <div key={i} style={{
-                  display: "flex", alignItems: "center", gap: 16, padding: "14px 24px", position: "relative",
-                  background: i === 1 ? "#e2e8dc" : "#eef2ea",
-                  borderRight: i < 2 ? `2px solid ${G1}` : "none",
-                }}>
+                <div key={i} className="relative flex items-center gap-4 px-5 sm:px-6 py-3.5"
+                  style={{
+                    background: i === 1 ? "#e2e8dc" : "#eef2ea",
+                  }}>
                   <img src={stage.img} alt={stage.label}
                     style={{ width: 56, height: 56, objectFit: "contain", imageRendering: "pixelated", flexShrink: 0 }} />
                   <div>
@@ -293,11 +292,12 @@ function LandingScreen({ onAuth }: { onAuth: (u: User) => void }) {
                     <p className="font-vt323 text-lg" style={{ color: MUTED }}>{stage.sub}</p>
                   </div>
                   {i < 2 && (
-                    <span style={{
+                    <span className="hidden sm:block" style={{
                       position: "absolute", right: -18, top: "50%", transform: "translateY(-50%)",
                       fontFamily: "monospace", fontSize: 13, color: G2, zIndex: 10, letterSpacing: -2,
                     }}>--&gt;</span>
                   )}
+                  <span className="sm:hidden" style={{ position: "absolute", right: 16, top: "50%", transform: "translateY(-50%)", color: G1, opacity: 0.3, fontFamily: "monospace" }}>{i < 2 ? "↓" : ""}</span>
                 </div>
               ))}
             </div>
@@ -307,7 +307,7 @@ function LandingScreen({ onAuth }: { onAuth: (u: User) => void }) {
 
       {/* ── STATS ── */}
       <section style={{ background: G0, borderTop: `4px solid #111`, borderBottom: `4px solid #111` }}>
-        <div className="max-w-6xl mx-auto px-6 py-8 grid grid-cols-2 md:grid-cols-4 gap-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5 sm:gap-8">
           {[
             { num: "30",   unit: "ДНЕЙ",   label: "до первой монетизации", img: "https://cdn.poehali.dev/projects/5137e801-4ad0-4168-8f01-73f78e2e10e1/bucket/5330fac6-f3b2-4298-9fcd-499665d6b74d.png" },
             { num: "15",   unit: "ПОСТОВ", label: "реальных публикаций",   img: "https://cdn.poehali.dev/projects/5137e801-4ad0-4168-8f01-73f78e2e10e1/bucket/32ba8633-c067-4c4b-a44d-d4ede8bfff91.png" },
@@ -315,10 +315,10 @@ function LandingScreen({ onAuth }: { onAuth: (u: User) => void }) {
             { num: "100%", unit: "ЧЕСТНО", label: "без обещаний стать звездой", img: "https://cdn.poehali.dev/projects/5137e801-4ad0-4168-8f01-73f78e2e10e1/bucket/70a85a0d-d998-4dfe-adf6-4099f06ac25e.png" },
           ].map((s, i) => (
             <div key={i} className="flex items-center gap-4" {...reveal(`stat-${i}`, i * 80)}>
-              <img src={s.img} alt="" style={{ width: 72, height: 72, objectFit: "contain", imageRendering: "pixelated", flexShrink: 0 }} />
-              <div>
+              <img src={s.img} alt="" className="w-14 h-14 sm:w-[72px] sm:h-[72px]" style={{ objectFit: "contain", imageRendering: "pixelated", flexShrink: 0 }} />
+              <div className="min-w-0">
                 <div className="flex items-baseline gap-2">
-                  <p className="font-pixel text-2xl" style={{ color: G4 }}>{s.num}</p>
+                  <p className="font-pixel text-xl sm:text-2xl" style={{ color: G4 }}>{s.num}</p>
                   <p className="font-pixel text-[9px]" style={{ color: G4 }}>{s.unit}</p>
                 </div>
                 <p className="font-vt323 text-lg" style={{ color: "#fff" }}>{s.label}</p>
@@ -329,8 +329,8 @@ function LandingScreen({ onAuth }: { onAuth: (u: User) => void }) {
       </section>
 
       {/* ── HOW IT WORKS ── */}
-      <section id="how" className="max-w-5xl mx-auto px-6 py-20">
-        <div className="text-center mb-12" {...reveal("how-title")}>
+      <section id="how" className="max-w-5xl mx-auto px-4 sm:px-6 py-12 sm:py-20">
+        <div className="text-center mb-8 sm:mb-12" {...reveal("how-title")}>
           <p className="font-pixel text-[9px] mb-2" style={{ color: G2 }}>КАК ЭТО РАБОТАЕТ</p>
           <h2 className="font-pixel text-lg md:text-xl" style={{ color: INK, lineHeight: 1.8 }}>
             30 ДНЕЙ. 4 ЭТАПА. ОДИН РЕЗУЛЬТАТ.
@@ -362,8 +362,8 @@ function LandingScreen({ onAuth }: { onAuth: (u: User) => void }) {
 
       {/* ── FEATURES ── */}
       <section style={{ background: G6, borderTop: `3px solid #d4d4d0`, borderBottom: `3px solid #d4d4d0` }}>
-        <div className="max-w-5xl mx-auto px-6 py-20">
-          <div className="text-center mb-12" {...reveal("feat-title")}>
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12 sm:py-20">
+          <div className="text-center mb-8 sm:mb-12" {...reveal("feat-title")}>
             <p className="font-pixel text-[9px] mb-2" style={{ color: G2 }}>MVP ФУНКЦИИ</p>
             <h2 className="font-pixel text-lg" style={{ color: INK, lineHeight: 1.8 }}>4 ВЕЩИ, КОТОРЫЕ МЕНЯЮТ ВСЁ</h2>
           </div>
@@ -384,21 +384,21 @@ function LandingScreen({ onAuth }: { onAuth: (u: User) => void }) {
       </section>
 
       {/* ── MISSIONS PREVIEW ── */}
-      <section className="max-w-5xl mx-auto px-6 py-20">
-        <div className="text-center mb-12" {...reveal("miss-title")}>
+      <section className="max-w-5xl mx-auto px-4 sm:px-6 py-12 sm:py-20">
+        <div className="text-center mb-8 sm:mb-12" {...reveal("miss-title")}>
           <p className="font-pixel text-[9px] mb-2" style={{ color: G2 }}>ПРИМЕРЫ МИССИЙ</p>
           <h2 className="font-pixel text-lg" style={{ color: INK, lineHeight: 1.8 }}>ЧТО ТЫ БУДЕШЬ ДЕЛАТЬ</h2>
         </div>
         <div className="space-y-3">
           {MISSIONS_PREVIEW.map((m, i) => (
-            <div key={i} className="p-4 flex items-center gap-4 bg-white" {...reveal(`miss-${i}`, i * 60)}
+            <div key={i} className="p-4 flex items-center gap-3 sm:gap-4 bg-white flex-wrap" {...reveal(`miss-${i}`, i * 60)}
               style={{ border: `3px solid ${G1}`, boxShadow: `4px 4px 0 ${G0}` }}>
               <div className="w-10 h-10 flex items-center justify-center flex-shrink-0 font-pixel text-[10px] text-white"
                 style={{ background: G1, border: `2px solid ${G0}` }}>
                 {i + 1}
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-pixel text-[9px]" style={{ color: INK }}>{m.title}</p>
+              <div className="flex-1 min-w-[60%]">
+                <p className="font-pixel text-[9px]" style={{ color: INK, lineHeight: 1.6 }}>{m.title}</p>
                 <p className="font-vt323 text-lg mt-1" style={{ color: MUTED }}>{m.format}</p>
               </div>
               <div className="flex items-center gap-3 flex-shrink-0">
@@ -417,7 +417,7 @@ function LandingScreen({ onAuth }: { onAuth: (u: User) => void }) {
 
       {/* ── CTA ── */}
       <section style={{ background: G1, borderTop: `4px solid ${G0}` }}>
-        <div className="max-w-5xl mx-auto px-6 py-20 text-center">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12 sm:py-20 text-center">
           <div {...reveal("cta-title")}>
             <p className="font-pixel text-[8px] mb-4" style={{ color: G4 }}>► SEASON 01 ОТКРЫТ</p>
             <h2 className="font-pixel mb-4" style={{ fontSize: "clamp(14px, 3vw, 24px)", color: "#fff", lineHeight: 1.8 }}>
@@ -431,7 +431,7 @@ function LandingScreen({ onAuth }: { onAuth: (u: User) => void }) {
             </p>
           </div>
           <div {...reveal("cta-btn", 200)}>
-            <PixelBtn onClick={() => setShowAuth(true)} size="lg" className="text-base px-10 py-5">
+            <PixelBtn onClick={() => setShowAuth(true)} size="lg" className="text-sm sm:text-base px-5 sm:px-10 py-4 sm:py-5 max-w-full">
               ► НАЧАТЬ СЕЙЧАС — БЕСПЛАТНО
             </PixelBtn>
             <p className="font-pixel text-[7px] mt-6 animate-blink" style={{ color: G5 }}>
