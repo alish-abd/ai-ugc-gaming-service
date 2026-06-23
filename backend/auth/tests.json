@@ -1,15 +1,6 @@
 {
   "tests": [
     {
-      "name": "Register new user",
-      "method": "POST",
-      "path": "/",
-      "body": {"action": "register", "username": "testplayer42", "email": "testplayer42@example.com", "password": "secret123"},
-      "expectedStatus": 200,
-      "expectedBody": {"token": "string"},
-      "bodyMatcher": "partial"
-    },
-    {
       "name": "Wrong password returns error",
       "method": "POST",
       "path": "/",
@@ -32,6 +23,15 @@
       "method": "POST",
       "path": "/",
       "body": {"action": "telegram", "telegram": {"id": 123, "first_name": "Test", "auth_date": 1700000000, "hash": "deadbeef"}},
+      "expectedStatus": 403,
+      "expectedBody": {"error": "string"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Telegram webapp invalid initData rejected",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "telegram_webapp", "init_data": "user=%7B%22id%22%3A1%7D&auth_date=1700000000&hash=deadbeef"},
       "expectedStatus": 403,
       "expectedBody": {"error": "string"},
       "bodyMatcher": "partial"

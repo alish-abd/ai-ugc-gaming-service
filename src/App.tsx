@@ -1311,11 +1311,23 @@ export default function App() {
   const missionsLoaded = useRef(false);
 
   const checkSession = useCallback(async () => {
+    const tg = (window as unknown as { Telegram?: { WebApp?: { initData?: string; ready?: () => void; expand?: () => void } } }).Telegram?.WebApp;
+    if (tg) { try { tg.ready?.(); tg.expand?.(); } catch { /* noop */ } }
+
     const token = localStorage.getItem(TOKEN_KEY);
-    if (!token) { setAuthChecked(true); return; }
-    const d = await apiGet(AUTH_URL);
-    if (d.user) setUser(d.user);
-    else localStorage.removeItem(TOKEN_KEY);
+    if (token) {
+      const d = await apiGet(AUTH_URL);
+      if (d.user) { setUser(d.user); setAuthChecked(true); return; }
+      localStorage.removeItem(TOKEN_KEY);
+    }
+
+    if (tg && tg.initData) {
+      const d = await authPost({ action: "telegram_webapp", init_data: tg.initData });
+      if (d.token && d.user) {
+        localStorage.setItem(TOKEN_KEY, d.token);
+        setUser(d.user);
+      }
+    }
     setAuthChecked(true);
   }, []);
   useEffect(() => { checkSession(); }, [checkSession]);

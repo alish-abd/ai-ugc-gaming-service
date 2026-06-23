@@ -58,6 +58,8 @@ def handler(event: dict, context) -> dict:
         return login(body)
     if action == 'telegram':
         return telegram_login(body)
+    if action == 'telegram_webapp':
+        return telegram_webapp_login(body)
     if action == 'logout':
         return logout(token)
 
@@ -148,26 +150,37 @@ def verify_telegram(data: dict, bot_token: str) -> bool:
     return hmac.compare_digest(calc_hash, received_hash)
 
 
-def telegram_login(body: dict) -> dict:
-    bot_token = os.environ.get('TELEGRAM_BOT_TOKEN', '')
-    if not bot_token:
-        return err('Telegram-вход не настроен', 500)
-
-    tg = body.get('telegram') or {}
-    tg = {k: str(v) for k, v in tg.items() if v is not None}
-
-    if not verify_telegram(tg, bot_token):
-        return err('Не удалось подтвердить вход через Telegram', 403)
-
-    auth_date = int(tg.get('auth_date', '0') or 0)
+def verify_webapp_init_data(init_data: str, bot_token: str):
+    """Проверка initData из Telegram Mini App. Возвращает dict пользователя или None."""
+    try:
+        from urllib.parse import parse_qsl
+    except Exception:
+        return None
+    parsed = dict(parse_qsl(init_data, keep_blank_values=True))
+    received_hash = parsed.pop('hash', '')
+    if not received_hash:
+        return None
+    pairs = [f"{k}={parsed[k]}" for k in sorted(parsed.keys())]
+    check_string = '\n'.join(pairs)
+    secret_key = hmac.new(b'WebAppData', bot_token.encode(), hashlib.sha256).digest()
+    calc_hash = hmac.new(secret_key, check_string.encode(), hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(calc_hash, received_hash):
+        return None
+    auth_date = int(parsed.get('auth_date', '0') or 0)
     if auth_date and (time.time() - auth_date) > 86400:
-        return err('Данные Telegram устарели, попробуйте снова', 403)
+        return None
+    user_json = parsed.get('user')
+    if not user_json:
+        return None
+    return json.loads(user_json)
 
+
+def upsert_tg_user(tg: dict) -> dict:
     tg_id = int(tg.get('id'))
-    first = tg.get('first_name', '')
-    last = tg.get('last_name', '')
-    tg_username = tg.get('username', '')
-    photo = tg.get('photo_url', '')
+    first = str(tg.get('first_name', '') or '')
+    last = str(tg.get('last_name', '') or '')
+    tg_username = str(tg.get('username', '') or '')
+    photo = str(tg.get('photo_url', '') or '')
 
     conn = get_conn()
     cur = conn.cursor()
@@ -201,7 +214,41 @@ def telegram_login(body: dict) -> dict:
     conn.commit()
     conn.close()
 
-    return ok({'token': new_token, 'user': {'id': user_id, 'username': username, 'email': email, 'avatar': avatar, 'xp': xp, 'level': level, 'streak': streak}})
+    return {'token': new_token, 'user': {'id': user_id, 'username': username, 'email': email, 'avatar': avatar, 'xp': xp, 'level': level, 'streak': streak}}
+
+
+def telegram_login(body: dict) -> dict:
+    bot_token = os.environ.get('TELEGRAM_BOT_TOKEN', '')
+    if not bot_token:
+        return err('Telegram-вход не настроен', 500)
+
+    tg = body.get('telegram') or {}
+    tg = {k: str(v) for k, v in tg.items() if v is not None}
+
+    if not verify_telegram(tg, bot_token):
+        return err('Не удалось подтвердить вход через Telegram', 403)
+
+    auth_date = int(tg.get('auth_date', '0') or 0)
+    if auth_date and (time.time() - auth_date) > 86400:
+        return err('Данные Telegram устарели, попробуйте снова', 403)
+
+    return ok(upsert_tg_user(tg))
+
+
+def telegram_webapp_login(body: dict) -> dict:
+    bot_token = os.environ.get('TELEGRAM_BOT_TOKEN', '')
+    if not bot_token:
+        return err('Telegram-вход не настроен', 500)
+
+    init_data = body.get('init_data') or ''
+    if not init_data:
+        return err('Нет данных Telegram', 400)
+
+    tg = verify_webapp_init_data(init_data, bot_token)
+    if not tg:
+        return err('Не удалось подтвердить вход через Telegram', 403)
+
+    return ok(upsert_tg_user(tg))
 
 
 def get_me(token: str) -> dict:
